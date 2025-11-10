@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CompraController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -30,4 +31,12 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'show']);
     Route::put('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'update']);
     Route::delete('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'destroy']);
+
+    Route::apiResource('compras', CompraController::class);
+    Route::put('compras/{compra}/anular', [CompraController::class, 'anular']);
+
+// nuevos reportes
+    Route::post('compras/report', [CompraController::class, 'report']);
+    Route::post('compras/resumen-insumos', [CompraController::class, 'resumenInsumos']);
+
 });

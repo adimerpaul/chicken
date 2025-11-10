@@ -6,6 +6,17 @@ const routes = [
       { path: '', component: () => import('pages/IndexPage.vue'), meta: { requiresAuth: true } },
       { path: 'usuarios', component: () => import('pages/usuarios/Usuarios.vue'), meta: { requiresAuth: true } },
       { path: 'insumos', component: () => import('pages/insumos/Insumos.vue'), meta: { requiresAuth: true } },
+      // { path: 'compras-insumos', component: () => import('pages/compras/ComprasIndex.vue'), meta: { requiresAuth: true } },
+      {
+        path: '/compras',
+        component: () => import('pages/compras/ComprasIndex.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: '/compras/insumos',
+        component: () => import('pages/compras/InsumosResumen.vue'),
+        meta: { requiresAuth: true }
+      }
     ]
   },
   {

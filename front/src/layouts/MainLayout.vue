@@ -159,15 +159,54 @@
             <q-item-label class="text-white">Ventas</q-item-label>
           </q-item-section>
         </q-item>
-<!--        compras-->
-        <q-item dense to="/compras" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
-          <q-item-section avatar>
-            <q-icon name="shopping_cart" class="text-white"/>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-white">Compras</q-item-label>
-          </q-item-section>
-        </q-item>
+<!--        {-->
+<!--        path: '/compras',-->
+<!--        component: () => import('pages/compras/ComprasIndex.vue'),-->
+<!--        meta: { requiresAuth: true }-->
+<!--        },-->
+<!--        {-->
+<!--        path: '/compras/insumos',-->
+<!--        component: () => import('pages/compras/InsumosResumen.vue'),-->
+<!--        meta: { requiresAuth: true }-->
+<!--        }-->
+        <q-expansion-item dense expand-separator icon="shopping_cart" label="Módulo Compras" active-class="menu-active" >
+          <q-list>
+            <q-item :inset-level="0.3" dense to="/compras/insumos" clickable class="menu-item" active-class="menu-active" v-close-popup >
+              <q-item-section avatar>
+                <q-icon name="add_shopping_cart" class="text-white"/>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-white">Compras de Insumos</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item :inset-level="0.3" dense to="/compras" clickable class="menu-item" active-class="menu-active" v-close-popup >
+              <q-item-section avatar>
+                <q-icon name="shopping_cart" class="text-white"/>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-white">Gestión de Compras</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-expansion-item>
+<!--&lt;!&ndash;        compras&ndash;&gt;-->
+<!--        <q-item dense to="/compras" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
+<!--          <q-item-section avatar>-->
+<!--            <q-icon name="shopping_cart" class="text-white"/>-->
+<!--          </q-item-section>-->
+<!--          <q-item-section>-->
+<!--            <q-item-label class="text-white">Compras</q-item-label>-->
+<!--          </q-item-section>-->
+<!--        </q-item>-->
+<!--&lt;!&ndash;        comprasInsumos&ndash;&gt;-->
+<!--        <q-item dense to="/compras-insumos" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
+<!--          <q-item-section avatar>-->
+<!--            <q-icon name="add_shopping_cart" class="text-white"/>-->
+<!--          </q-item-section>-->
+<!--          <q-item-section>-->
+<!--            <q-item-label class="text-white">Compras de Insumos</q-item-label>-->
+<!--          </q-item-section>-->
+<!--        </q-item>-->
         <q-item dense to="/reportes" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
           <q-item-section avatar>
             <q-icon name="bar_chart" class="text-white"/>

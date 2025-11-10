@@ -13,7 +13,13 @@ return new class extends Migration
     {
         Schema::create('compras', function (Blueprint $table) {
             $table->id();
+            $table->date('fecha')->default(now());
+            $table->string('proveedor')->nullable();
+            $table->decimal('total', 12, 2)->default(0);
+            $table->string('estado')->default('ACTIVO'); // ACTIVO | ANULADO
+            $table->text('nota')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
