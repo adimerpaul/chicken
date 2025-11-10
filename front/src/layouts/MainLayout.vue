@@ -143,14 +143,14 @@
             <q-item-label class="text-white">Productos</q-item-label>
           </q-item-section>
         </q-item>
-        <q-item dense to="/clientes" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
-          <q-item-section avatar>
-            <q-icon name="storefront" class="text-white"/>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-white">Clientes</q-item-label>
-          </q-item-section>
-        </q-item>
+<!--        <q-item dense to="/clientes" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
+<!--          <q-item-section avatar>-->
+<!--            <q-icon name="storefront" class="text-white"/>-->
+<!--          </q-item-section>-->
+<!--          <q-item-section>-->
+<!--            <q-item-label class="text-white">Clientes</q-item-label>-->
+<!--          </q-item-section>-->
+<!--        </q-item>-->
         <q-item dense to="/ventas" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
           <q-item-section avatar>
             <q-icon name="point_of_sale" class="text-white"/>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\ProductoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -38,5 +39,12 @@ Route::middleware('auth:sanctum')->group(callback: function () {
 // nuevos reportes
     Route::post('compras/report', [CompraController::class, 'report']);
     Route::post('compras/resumen-insumos', [CompraController::class, 'resumenInsumos']);
+
+
+    Route::get('/productos',          [ProductoController::class, 'index']);
+    Route::post('/productos',         [ProductoController::class, 'store']);
+    Route::get('/productos/{product}',[ProductoController::class, 'show']);
+    Route::put('/productos/{product}',[ProductoController::class, 'update']);
+    Route::delete('/productos/{product}',[ProductoController::class, 'destroy']);
 
 });

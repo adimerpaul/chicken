@@ -16,7 +16,13 @@ const routes = [
         path: '/compras/insumos',
         component: () => import('pages/compras/InsumosResumen.vue'),
         meta: { requiresAuth: true }
-      }
+      },
+      // productos
+      {
+        path: '/productos',
+        component: () => import('pages/productos/Productos.vue'),
+        meta: { requiresAuth: true }
+      },
     ]
   },
   {
