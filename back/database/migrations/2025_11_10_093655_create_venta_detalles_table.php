@@ -13,7 +13,20 @@ return new class extends Migration
     {
         Schema::create('venta_detalles', function (Blueprint $table) {
             $table->id();
+
+            $table->unsignedBigInteger('venta_id')->index();
+            $table->unsignedBigInteger('product_id')->nullable()->index();
+
+            // snapshot de datos del producto al momento de vender
+            $table->string('name');
+            $table->double('price')->default(0);
+            $table->double('qty')->default(1);
+            $table->double('subtotal')->default(0);
+
             $table->timestamps();
+
+            $table->foreign('venta_id')->references('id')->on('ventas')->cascadeOnDelete();
+            $table->foreign('product_id')->references('id')->on('productos')->nullOnDelete();
         });
     }
 

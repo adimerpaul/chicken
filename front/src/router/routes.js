@@ -23,6 +23,12 @@ const routes = [
         component: () => import('pages/productos/Productos.vue'),
         meta: { requiresAuth: true }
       },
+      // ventas
+      {
+        path: '/ventas',
+        component: () => import('pages/ventas/Ventas.vue'),
+        meta: { requiresAuth: true }
+      }
     ]
   },
   {
