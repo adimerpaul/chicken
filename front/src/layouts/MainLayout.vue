@@ -99,7 +99,7 @@
           <div class="text-caption text-white">Sistema de Gestión Apícola</div>
         </q-item-label>
 
-        <q-separator color="green-8" />
+<!--        <q-separator color="green-8" />-->
 
         <q-item-label header class="q-px-md text-grey-3 q-mt-sm">
           Módulos del Sistema

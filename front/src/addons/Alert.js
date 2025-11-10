@@ -16,8 +16,8 @@ export class Alert{
       actions: [
         { icon: 'close', color: 'black', round: true, size: 'xs' }
       ],
-      progressClass: 'bg-warning',
-      classes: 'bg-white text-black text-bold left-yellow-border'
+      progressClass: 'bg.jpg-warning',
+      classes: 'bg.jpg-white text-black text-bold left-yellow-border'
     });
   }
   static info(message, subTitle = '') {
@@ -34,8 +34,8 @@ export class Alert{
       actions: [
         { icon: 'close', color: 'black', round: true, size: 'xs' }
       ],
-      progressClass: 'bg-info',
-      classes: 'bg-white text-black text-bold left-blue-border'
+      progressClass: 'bg.jpg-info',
+      classes: 'bg.jpg-white text-black text-bold left-blue-border'
     });
   }
   static success(message,subTitle = '') {
@@ -52,8 +52,8 @@ export class Alert{
       actions: [
         { icon: 'close', color: 'black', round: true, size: 'xs' }
       ],
-      progressClass: 'bg-positive',
-      classes: 'bg-white text-black text-bold left-green-border'
+      progressClass: 'bg.jpg-positive',
+      classes: 'bg.jpg-white text-black text-bold left-green-border'
     });
   }
   static error(message,subTitle = '') {
@@ -70,8 +70,8 @@ export class Alert{
       actions: [
         { icon: 'close', color: 'black', round: true, size: 'xs' }
       ],
-      progressClass: 'bg-negative',
-      classes: 'bg-white text-black text-bold left-red-border'
+      progressClass: 'bg.jpg-negative',
+      classes: 'bg.jpg-white text-black text-bold left-red-border'
     });
   }
   static dialog (title, message) {
