@@ -262,7 +262,7 @@ export default {
       gestiones: [],
       filter: '',
       // USUARIO GERENTE PRODUCTOR PRODUCCION ADMINITRATIVO
-      roles: ['Usuario', 'Gerente', 'Productor', 'Produccion', 'Administrativo'],
+      roles: ['Administrador', 'Vendedor'],
       columns: [
         {name: 'actions', label: 'Acciones', align: 'center'},
         {name: 'name', label: 'Nombre', align: 'left', field: 'name'},
@@ -340,7 +340,7 @@ export default {
         area_id: 1,
         username: '',
         cargo: '',
-        role: 'Usuario',
+        role: 'Vendedor',
       }
       this.actionUser = 'Nuevo'
       this.userDialog = true
