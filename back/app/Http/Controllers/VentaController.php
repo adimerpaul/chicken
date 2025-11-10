@@ -13,15 +13,53 @@ class VentaController extends Controller
     // GET /sales (listado básico)
     public function index(Request $request)
     {
-        $q = Venta::query()
-            ->when($request->filled('date'),  fn($qb)=>$qb->where('date', $request->date))
-            ->when($request->filled('type'),  fn($qb)=>$qb->where('type', $request->type))
-            ->when($request->filled('status'),fn($qb)=>$qb->where('status',$request->status))
-            ->orderByDesc('id')
+        $per = min(max((int)$request->get('per_page', 20), 5), 100);
+
+        $q = \App\Models\Venta::query()
+            ->when($request->filled('date'), fn($qb)      => $qb->where('date', $request->date))
+            ->when($request->filled('date_from'), fn($qb) => $qb->where('date', '>=', $request->date_from))
+            ->when($request->filled('date_to'), fn($qb)   => $qb->where('date', '<=', $request->date_to))
+            ->when($request->filled('type'), fn($qb)      => $qb->where('type', $request->type))
+            ->when($request->filled('status'), fn($qb)    => $qb->where('status', $request->status))
+            ->when($request->filled('mesa'), fn($qb)      => $qb->where('mesa', $request->mesa))
+            ->when($request->filled('pago'), fn($qb)      => $qb->where('pago', $request->pago))
+            ->when($request->filled('q'), function($qb) use ($request){
+                $q = $request->q;
+                $qb->where(function($w) use ($q){
+                    $w->where('name','like',"%$q%")
+                        ->orWhere('numero','like',"%$q%")
+                        ->orWhere('comment','like',"%$q%");
+                });
+            })
             ->with('detalles');
 
-        return $q->paginate(50);
+        // Summary del conjunto filtrado
+        $forAgg  = clone $q;
+        $summary = [
+            'count' => (clone $forAgg)->count(),
+            'total' => (clone $forAgg)->sum('total'),
+            'by_type' => (clone $forAgg)
+                ->select('type', DB::raw('SUM(total) as total'), DB::raw('COUNT(*) as items'))
+                ->groupBy('type')
+                ->get(),
+        ];
+
+        $p = $q->orderByDesc('date')->orderByDesc('time')->paginate($per);
+
+        return response()->json([
+            'data'  => $p->items(),
+            'meta'  => [
+                'current_page' => $p->currentPage(),
+                'last_page'    => $p->lastPage(),
+                'per_page'     => $p->perPage(),
+                'total'        => $p->total(),
+                'from'         => $p->firstItem(),
+                'to'           => $p->lastItem(),
+            ],
+            'summary' => $summary
+        ]);
     }
+
 
     // POST /sales   (crear venta desde el carrito)
     public function store(Request $request)

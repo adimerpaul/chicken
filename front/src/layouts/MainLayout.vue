@@ -159,6 +159,16 @@
             <q-item-label class="text-white">Ventas</q-item-label>
           </q-item-section>
         </q-item>
+<!--        ventas list-->
+        <q-item dense to="/ventas/lista" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+          <q-item-section avatar>
+            <q-icon name="receipt_long" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Lista de Ventas</q-item-label>
+          </q-item-section>
+        </q-item>
+<!--        compras routes-->
 <!--        {-->
 <!--        path: '/compras',-->
 <!--        component: () => import('pages/compras/ComprasIndex.vue'),-->

@@ -1,0 +1,338 @@
+<template>
+  <q-page class="bg-grey-3 q-pa-sm">
+    <!-- HEADER + FILTROS -->
+    <q-card flat bordered>
+      <q-card-section class="q-pa-sm">
+        <div class="row items-end q-col-gutter-sm">
+          <div class="col-12 col-sm-2">
+            <q-input v-model="filters.date_from" type="date" dense outlined label="Desde" />
+          </div>
+          <div class="col-12 col-sm-2">
+            <q-input v-model="filters.date_to" type="date" dense outlined label="Hasta" />
+          </div>
+          <div class="col-12 col-sm-2">
+            <q-select v-model="filters.type" dense outlined label="Tipo"
+                      :options="['','INGRESO','EGRESO','CAJA']" emit-value map-options />
+          </div>
+          <div class="col-12 col-sm-2">
+            <q-select v-model="filters.status" dense outlined label="Estado"
+                      :options="['','ACTIVO','ANULADO']" emit-value map-options />
+          </div>
+          <div class="col-12 col-sm-2">
+            <q-select v-model="filters.mesa" dense outlined label="Mesa"
+                      :options="['','MESA','LLEVAR','DELIVERY','PEDIDOS YA']" emit-value map-options />
+          </div>
+          <div class="col-12 col-sm-2">
+            <q-select v-model="filters.pago" dense outlined label="Pago"
+                      :options="['','EFECTIVO','TARJETA','ONLINE','QR']" emit-value map-options />
+          </div>
+
+          <div class="col-12 col-sm-4">
+            <q-input v-model="filters.q" dense outlined debounce="400" label="Buscar (cliente, nro, comentario)" />
+          </div>
+
+          <div class="col-12 col-sm-8 text-right">
+            <q-btn flat color="primary" icon="refresh" :loading="loading" @click="fetchSales" label="Actualizar" no-caps class="q-mr-sm"/>
+            <q-btn outline color="primary" icon="filter_alt_off" @click="resetFilters" label="Limpiar" no-caps/>
+          </div>
+        </div>
+      </q-card-section>
+    </q-card>
+
+    <!-- RESUMEN -->
+    <div class="row q-col-gutter-sm q-mt-sm">
+      <div class="col-12 col-sm-3">
+        <q-card flat bordered>
+          <q-card-section class="q-pa-sm">
+            <div class="text-caption text-grey">Total (filtrado)</div>
+            <div class="text-h6 text-bold">{{ money(summary.total || 0) }} Bs</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-12 col-sm-3">
+        <q-card flat bordered>
+          <q-card-section class="q-pa-sm">
+            <div class="text-caption text-grey"># Ventas</div>
+            <div class="text-h6 text-bold">{{ summary.count || 0 }}</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-12 col-sm-3">
+        <q-card flat bordered>
+          <q-card-section class="q-pa-sm">
+            <div class="text-caption text-grey">Ingreso</div>
+            <div class="text-h6 text-positive text-bold">{{ money(byType('INGRESO')) }} Bs</div>
+          </q-card-section>
+        </q-card>
+      </div>
+      <div class="col-12 col-sm-3">
+        <q-card flat bordered>
+          <q-card-section class="q-pa-sm">
+            <div class="text-caption text-grey">Egreso/Caja</div>
+            <div class="text-h6 text-bold">
+              {{ money(byType('EGRESO') + byType('CAJA')) }} Bs
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
+
+    <!-- TABLA -->
+    <q-card flat bordered class="q-mt-sm">
+      <q-table
+        :rows="rows"
+        :columns="columns"
+        row-key="id"
+        flat
+        bordered
+        dense
+        :loading="loading"
+        :rows-per-page-options="[10,20,50]"
+        :pagination.sync="pagination"
+        @request="onRequest"
+      >
+        <template #body-cell-status="props">
+          <q-td :props="props">
+            <q-chip dense :color="props.row.status === 'ACTIVO' ? 'green' : 'red'" text-color="white">
+              {{ props.row.status }}
+            </q-chip>
+          </q-td>
+        </template>
+
+        <template #body-cell-type="props">
+          <q-td :props="props">
+            <q-chip dense :color="typeColor(props.row.type)" text-color="white">
+              {{ props.row.type }}
+            </q-chip>
+          </q-td>
+        </template>
+
+        <template #body-cell-total="props">
+          <q-td :props="props" class="text-right">
+            {{ money(props.row.total) }}
+          </q-td>
+        </template>
+
+        <template #body-cell-actions="props">
+          <q-td :props="props" class="text-right">
+            <q-btn dense flat round icon="visibility" @click="openDetail(props.row)"/>
+            <!-- Si tienes impresión -->
+            <!-- <q-btn dense flat round icon="print" @click="printTicket(props.row)"/> -->
+          </q-td>
+        </template>
+
+        <template #no-data>
+          <div class="full-width row flex-center q-pa-lg text-grey">
+            Sin resultados
+          </div>
+        </template>
+      </q-table>
+
+      <!-- Paginación (Laravel) -->
+      <div class="row items-center q-pa-sm">
+        <div class="col">
+          <span class="text-caption text-grey-7">
+            Mostrando {{ meta.from || 0 }}–{{ meta.to || 0 }} de {{ meta.total || 0 }}
+          </span>
+        </div>
+        <div class="col-auto">
+          <q-pagination
+            v-model="meta.current_page"
+            :max="meta.last_page || 1"
+            max-pages="8"
+            direction-links
+            boundary-links
+            @update:model-value="pageChange"
+          />
+        </div>
+      </div>
+    </q-card>
+
+    <!-- DETALLE -->
+    <q-dialog v-model="dlg" persistent>
+      <q-card style="width: 800px; max-width: 95vw">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1">
+            Venta #{{ current?.numero }} — {{ current?.date }} {{ current?.time?.substring(0,8) }}
+          </div>
+          <q-space/><q-btn flat round dense icon="close" @click="dlg=false"/>
+        </q-card-section>
+        <q-card-section class="q-pt-none">
+          <div class="row q-col-gutter-sm q-mb-sm">
+            <div class="col-6"><b>Cliente:</b> {{ current?.name }}</div>
+            <div class="col-3"><b>Mesa:</b> {{ current?.mesa }}</div>
+            <div class="col-3"><b>Pago:</b> {{ current?.pago }}</div>
+            <div class="col-6"><b>Tipo:</b> {{ current?.type }}</div>
+            <div class="col-6"><b>Estado:</b> {{ current?.status }}</div>
+            <div class="col-12" v-if="current?.comment"><b>Comentario:</b> {{ current?.comment }}</div>
+          </div>
+
+          <q-table
+            :rows="current?.detalles || []"
+            :columns="detailCols"
+            flat bordered dense row-key="id"
+          >
+            <template #body-cell-subtotal="p">
+              <q-td :props="p" class="text-right">{{ money(p.row.subtotal) }}</q-td>
+            </template>
+            <template #body-cell-price="p">
+              <q-td :props="p" class="text-right">{{ money(p.row.price) }}</q-td>
+            </template>
+          </q-table>
+
+          <div class="text-right q-mt-sm text-h6">
+            Total: {{ money(current?.total || 0) }} Bs
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+  </q-page>
+</template>
+
+<script>
+export default {
+  name: 'VentasListado',
+  data () {
+    const today = new Date().toISOString().slice(0,10)
+    return {
+      loading: false,
+      rows: [],
+      meta: { current_page: 1, last_page: 1, total: 0, from: 0, to: 0, per_page: 20 },
+      pagination: { page: 1, rowsPerPage: 20, sortBy: 'date', descending: true },
+      filters: {
+        date_from: today,
+        date_to: today,
+        type: '',
+        status: '',
+        mesa: '',
+        pago: '',
+        q: ''
+      },
+      summary: { total: 0, count: 0, by_type: [] },
+      dlg: false,
+      current: null,
+
+      columns: [
+        { name:'numero', label:'#', field:'numero', align:'left', sortable:true },
+        { name:'date', label:'Fecha', field:'date', align:'left', sortable:true },
+        { name:'time', label:'Hora', field: row => String(row.time).substring(0,8), align:'left' },
+        { name:'name', label:'Cliente', field:'name', align:'left' },
+        { name:'mesa', label:'Mesa', field:'mesa', align:'left' },
+        { name:'pago', label:'Pago', field:'pago', align:'left' },
+        { name:'type', label:'Tipo', field:'type', align:'left' },
+        { name:'status', label:'Estado', field:'status', align:'left' },
+        { name:'total', label:'Total (Bs)', field:'total', align:'right', sortable:true },
+        { name:'actions', label:'', field:'id', align:'right' }
+      ],
+      detailCols: [
+        { name:'name', label:'Producto', field:'name', align:'left' },
+        { name:'qty', label:'Cant.', field:'qty', align:'right' },
+        { name:'price', label:'Precio', field:'price', align:'right' },
+        { name:'subtotal', label:'Subtotal', field:'subtotal', align:'right' },
+      ],
+    }
+  },
+  mounted () { this.fetchSales() },
+  methods: {
+    money (v) { return Number(v||0).toLocaleString('es-BO',{minimumFractionDigits:2,maximumFractionDigits:2}) },
+    typeColor (t) {
+      if (t === 'INGRESO') return 'green'
+      if (t === 'EGRESO')  return 'orange'
+      if (t === 'CAJA')    return 'blue'
+      return 'grey'
+    },
+    byType (t) {
+      const f = (this.summary.by_type || []).find(x => x.type === t)
+      return f ? Number(f.total || 0) : 0
+    },
+
+    resetFilters () {
+      Object.assign(this.filters, { date_from:'', date_to:'', type:'', status:'', mesa:'', pago:'', q:'' })
+      this.pagination.page = 1
+      this.fetchSales()
+    },
+
+    pageChange () {
+      this.pagination.page = this.meta.current_page
+      this.fetchSales()
+    },
+
+    onRequest (/*props*/) {
+      // QTable emit — usamos nuestro fetch con meta/pagination del backend
+    },
+
+    async fetchSales () {
+      this.loading = true
+      try {
+        const params = {
+          page: this.pagination.page,
+          per_page: this.pagination.rowsPerPage,
+          ...this.filters
+        }
+        const { data } = await this.$axios.get('sales', { params })
+        // Soportar dos formatos: (A) paginator Laravel plano o (B) {data, meta, summary}
+        if (Array.isArray(data?.data) && data?.meta) {
+          this.rows = data.data
+          this.meta  = {
+            current_page: data.meta.current_page,
+            last_page: data.meta.last_page,
+            total: data.meta.total,
+            from: data.meta.from,
+            to: data.meta.to,
+            per_page: data.meta.per_page
+          }
+          this.summary = data.summary || this.summary
+        } else {
+          // Paginador Laravel estándar (sin wrapper)
+          this.rows = data.data || []
+          this.meta  = {
+            current_page: data.current_page || 1,
+            last_page: data.last_page || 1,
+            total: data.total || 0,
+            from: data.from || 0,
+            to: data.to || 0,
+            per_page: data.per_page || this.pagination.rowsPerPage,
+          }
+          // si el backend no manda summary, lo calculamos rápido localmente
+          this.summary = {
+            total: this.rows.reduce((a,b)=>a+Number(b.total||0),0),
+            count: this.rows.length,
+            by_type: [
+              { type:'INGRESO', total: this.rows.filter(r=>r.type==='INGRESO').reduce((a,b)=>a+Number(b.total||0),0) },
+              { type:'EGRESO',  total: this.rows.filter(r=>r.type==='EGRESO').reduce((a,b)=>a+Number(b.total||0),0) },
+              { type:'CAJA',    total: this.rows.filter(r=>r.type==='CAJA').reduce((a,b)=>a+Number(b.total||0),0) },
+            ]
+          }
+        }
+      } catch (e) {
+        this.$q.notify?.({ type:'negative', message:'No se pudo cargar ventas' })
+      } finally {
+        this.loading = false
+      }
+    },
+
+    openDetail (row) {
+      this.current = row
+      // si quieres “refrescar” detalles por id:
+      // this.$axios.get(`sales/${row.id}`).then(r => { this.current = r.data; this.dlg = true })
+      this.dlg = true
+    },
+
+    // printTicket (row) { Imprimir.recibo(row) }
+  },
+  watch: {
+    'filters.type':     'fetchSales',
+    'filters.status':   'fetchSales',
+    'filters.mesa':     'fetchSales',
+    'filters.pago':     'fetchSales',
+    'filters.q':        function(){ this.pagination.page=1; this.fetchSales() },
+    'filters.date_from':'fetchSales',
+    'filters.date_to':  'fetchSales',
+    'pagination.rowsPerPage': 'fetchSales',
+  }
+}
+</script>
+
+<style scoped>
+.text-positive { color: #21ba45; }
+</style>

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Producto;
 use App\Models\User;
 use App\Models\Insumo;
 use Illuminate\Database\Seeder;
@@ -109,6 +110,104 @@ class DatabaseSeeder extends Seeder
             Insumo::firstOrCreate(
                 ['nombre' => $data['nombre']],
                 $data
+            );
+        }
+
+        $ord = 1;
+
+        $items = [
+            // === Combos (Pollos) ===
+            [
+                'categoria'   => 'Pollos',
+                'name'        => 'Junior',
+                'description' => '1 presa + arroz + papa',
+                'price'       => 20,
+                'unit'        => 'UND',
+                'image'       => null,
+                'active'      => true,
+                'ord'         => $ord++,
+            ],
+            [
+                'categoria'   => 'Pollos',
+                'name'        => 'Doble',
+                'description' => '2 presas + arroz + papa',
+                'price'       => 28,
+                'unit'        => 'UND',
+                'image'       => null,
+                'active'      => true,
+                'ord'         => $ord++,
+            ],
+            [
+                'categoria'   => 'Pollos',
+                'name'        => 'Familiar',
+                'description' => '5 presas + 2 arroz + 2 papa',
+                'price'       => 70,
+                'unit'        => 'UND',
+                'image'       => null,
+                'active'      => true,
+                'ord'         => $ord++,
+            ],
+
+            // === Acompañamientos ===
+            [
+                'categoria'   => 'Acompañamientos',
+                'name'        => 'Porción de papas',
+                'description' => 'Papas fritas por porción',
+                'price'       => 10,
+                'unit'        => 'UND',
+                'image'       => null,
+                'active'      => true,
+                'ord'         => $ord++,
+            ],
+            [
+                'categoria'   => 'Acompañamientos',
+                'name'        => 'Porción de arroz',
+                'description' => 'Arroz por porción',
+                'price'       => 10,
+                'unit'        => 'UND',
+                'image'       => null,
+                'active'      => true,
+                'ord'         => $ord++,
+            ],
+            [
+                'categoria'   => 'Acompañamientos',
+                'name'        => 'Porción de plátano',
+                'description' => 'Plátano frito por porción',
+                'price'       => 10,
+                'unit'        => 'UND',
+                'image'       => null,
+                'active'      => true,
+                'ord'         => $ord++,
+            ],
+
+            // === Bebidas ===
+            [
+                'categoria'   => 'Refrescos y Bebidas',
+                'name'        => 'Gaseosa 2 litros',
+                'description' => 'Botella 2L',
+                'price'       => 15,
+                'unit'        => 'UND',
+                'image'       => null,
+                'active'      => true,
+                'ord'         => $ord++,
+            ],
+            [
+                'categoria'   => 'Refrescos y Bebidas',
+                'name'        => 'Gaseosa 1 litro',
+                'description' => 'Botella 1L',
+                'price'       => 10,
+                'unit'        => 'UND',
+                'image'       => null,
+                'active'      => true,
+                'ord'         => $ord++,
+            ],
+        ];
+
+        foreach ($items as $p) {
+            // Usa nombre + categoría como “clave” para evitar duplicados
+            Producto::updateOrCreate(
+                ['name' => $p['name'], 'categoria' => $p['categoria']],
+                $p
             );
         }
     }

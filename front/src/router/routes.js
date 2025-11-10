@@ -28,6 +28,12 @@ const routes = [
         path: '/ventas',
         component: () => import('pages/ventas/Ventas.vue'),
         meta: { requiresAuth: true }
+      },
+      // /ventas/lista
+      {
+        path: '/ventas/lista',
+        component: () => import('pages/ventas/VentasLista.vue'),
+        meta: { requiresAuth: true }
       }
     ]
   },
