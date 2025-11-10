@@ -23,4 +23,11 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('/permissions', [App\Http\Controllers\UserController::class, 'permissions']);
     Route::get('/users/{user}/permissions', [App\Http\Controllers\UserController::class, 'getPermissions']);
     Route::put('/users/{user}/permissions', [App\Http\Controllers\UserController::class, 'syncPermissions']);
+
+//    insumos
+    Route::get('/insumos', [App\Http\Controllers\InsumoController::class, 'index']);
+    Route::post('/insumos', [App\Http\Controllers\InsumoController::class, 'store']);
+    Route::get('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'show']);
+    Route::put('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'update']);
+    Route::delete('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'destroy']);
 });
