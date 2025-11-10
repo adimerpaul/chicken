@@ -95,8 +95,8 @@
           <q-avatar size="64px" class="q-mb-sm bg-white" rounded>
             <q-img src="/logo.png" width="90px" />
           </q-avatar>
-          <div class="text-weight-bold text-white">EBA</div>
-          <div class="text-caption text-white">Sistema de Gestión Apícola</div>
+          <div class="text-weight-bold text-white">Chicken</div>
+          <div class="text-caption text-white">Garden</div>
         </q-item-label>
 
 <!--        <q-separator color="green-8" />-->
@@ -264,7 +264,7 @@
             EBA v{{ $version }}
           </div>
           <div class="text-white-7 text-caption">
-            © {{ new Date().getFullYear() }} Sistema de Gestión Apícola
+            © {{ new Date().getFullYear() }} Chicken’s · Garden
           </div>
         </div>
 
@@ -342,7 +342,7 @@ function logout () {
           proxy.$store.isLogged = false
           proxy.$store.user = {}
           proxy.$store.permissions = []
-          localStorage.removeItem('tokenEBA')
+          localStorage.removeItem('tokenChicken')
           proxy.$router.push('/login')
         })
         .catch(() => proxy.$alert.error('Error al cerrar sesión. Intente nuevamente.'))

@@ -7,10 +7,10 @@
         <q-form @submit="login" class="login-wrap">
           <q-card flat bordered class="login-card">
             <q-card-section class="q-pt-lg text-center">
-              <q-img src="logo.png" width="110px" class="q-mb-sm" ratio="1" fit="contain" />
+              <q-img src="fondo.png" width="110px" class="q-mb-sm" ratio="1" fit="contain" />
               <br>
               <div class="text-subtitle2 text-grey-7 brand-chip">
-                <b>Chicken</b> · Healthy
+                <b>Chicken’s</b> · Garden
               </div>
             </q-card-section>
 
@@ -77,7 +77,7 @@
               </div>
               <q-separator spaced />
               <div class="text-caption text-grey-6">
-                © {{ year }} Chicken · Healthy. Todos los derechos reservados.
+                © {{ year }} Chicken’s · Garden. Todos los derechos reservados.
               </div>
             </q-card-section>
           </q-card>
@@ -108,7 +108,7 @@ function login () {
       proxy.$store.isLogged = true
       proxy.$store.user = user
       proxy.$store.permissions = (user.permissions || []).map(p => p.name)
-      localStorage.setItem('tokenSofiaFactu', token)
+      localStorage.setItem('tokenChicken', token)
       localStorage.setItem('user', JSON.stringify(user))
       proxy.$alert.success('Bienvenido ', user.name)
       proxy.$router.push('/')
