@@ -48,5 +48,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::delete('/productos/{product}',[ProductoController::class, 'destroy']);
 
     Route::apiResource('sales', App\Http\Controllers\VentaController::class);
+//    http://localhost:8000/api/sales/3/anular
+    Route::post('sales/{sale}/anular', [App\Http\Controllers\VentaController::class, 'anular']);
 
 });

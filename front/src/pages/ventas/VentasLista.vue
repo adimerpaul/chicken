@@ -32,6 +32,8 @@
           </div>
 
           <div class="col-12 col-sm-8 text-right">
+<!--            btn agregar gasto-->
+            <q-btn flat color="primary" icon="add_circle" @click="agregarGasto" label="Agregar Gasto" no-caps class="q-mr-sm"/>
             <q-btn flat color="primary" icon="refresh" :loading="loading" @click="fetchSales" label="Actualizar" no-caps class="q-mr-sm"/>
             <q-btn outline color="primary" icon="filter_alt_off" @click="resetFilters" label="Limpiar" no-caps/>
           </div>
@@ -114,10 +116,27 @@
         </template>
 
         <template #body-cell-actions="props">
-          <q-td :props="props" class="text-right">
-            <q-btn dense flat round icon="visibility" @click="openDetail(props.row)"/>
+          <q-td :props="props" class="">
+<!--            <q-btn dense flat round icon="visibility" @click="openDetail(props.row)"/>-->
+<!--            <q-btn dense flat round icon="edit" v-if="props.row.status === 'ACTIVO'" :to="`/ventas/editar/${props.row.id}`"/>-->
             <!-- Si tienes impresión -->
             <!-- <q-btn dense flat round icon="print" @click="printTicket(props.row)"/> -->
+            <q-btn-dropdown dense label="Opciones" no-caps size="xs" color="primary">
+              <q-list>
+                <q-item clickable @click="openDetail(props.row)" v-close-popup>
+                  <q-item-section avatar>
+                    <q-icon name="visibility"/>
+                  </q-item-section>
+                  <q-item-section>Ver Detalle</q-item-section>
+                </q-item>
+                <q-item clickable v-if="props.row.status === 'ACTIVO'" @click="anularVenta(props.row)" v-close-popup>
+                  <q-item-section avatar>
+                    <q-icon name="cancel"/>
+                  </q-item-section>
+                  <q-item-section>Anular Venta</q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
           </q-td>
         </template>
 
@@ -186,6 +205,27 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+<!--    dialogGasto-->
+    <q-dialog v-model="dialogGasto" persistent>
+      <q-card style="width: 400px; max-width: 95vw">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1">
+            Agregar Gasto
+          </div>
+          <q-space/><q-btn flat round dense icon="close" @click="dialogGasto=false"/>
+        </q-card-section>
+        <q-card-section>
+          <!-- Aquí va el formulario para agregar gasto -->
+          <div class="q-pa-sm">
+<!--            <pre>{{venta}}</pre>-->
+            <q-input v-model="venta.name" label="Descripción" outlined dense class="q-mb-sm"/>
+<!--            total-->
+            <q-input v-model.number="venta.total" label="Monto (Bs)" type="number" outlined dense class="q-mb-sm"/>
+            <q-btn label="Guardar" color="primary" @click="guardarGasto" :loading="loading"/>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -197,6 +237,8 @@ export default {
     return {
       loading: false,
       rows: [],
+      venta: {},
+      dialogGasto: false,
       meta: { current_page: 1, last_page: 1, total: 0, from: 0, to: 0, per_page: 20 },
       pagination: { page: 1, rowsPerPage: 20, sortBy: 'date', descending: true },
       filters: {
@@ -214,6 +256,7 @@ export default {
 
       columns: [
         { name:'numero', label:'#', field:'numero', align:'left', sortable:true },
+        { name:'actions', label:'Opciones', field:'id', align:'right' },
         { name:'date', label:'Fecha', field:'date', align:'left', sortable:true },
         { name:'time', label:'Hora', field: row => String(row.time).substring(0,8), align:'left' },
         { name:'name', label:'Cliente', field:'name', align:'left' },
@@ -222,7 +265,6 @@ export default {
         { name:'type', label:'Tipo', field:'type', align:'left' },
         { name:'status', label:'Estado', field:'status', align:'left' },
         { name:'total', label:'Total (Bs)', field:'total', align:'right', sortable:true },
-        { name:'actions', label:'', field:'id', align:'right' }
       ],
       detailCols: [
         { name:'name', label:'Producto', field:'name', align:'left' },
@@ -234,6 +276,24 @@ export default {
   },
   mounted () { this.fetchSales() },
   methods: {
+    anularVenta(row) {
+      this.$q.dialog({
+        title: 'Confirmar Anulación',
+        message: `¿Está seguro de anular la venta #${row.numero}? Esta acción no se puede deshacer.`,
+        cancel: true,
+        persistent: true
+      }).onOk(() => {
+        this.loading = true
+        this.$axios.post(`sales/${row.id}/anular`).then(() => {
+          this.$q.notify?.({ type:'positive', message:'Venta anulada' })
+          this.fetchSales()
+        }).catch(() => {
+          this.$q.notify?.({ type:'negative', message:'Error al anular venta' })
+        }).finally(() => {
+          this.loading = false
+        })
+      })
+    },
     money (v) { return Number(v||0).toLocaleString('es-BO',{minimumFractionDigits:2,maximumFractionDigits:2}) },
     typeColor (t) {
       if (t === 'INGRESO') return 'green'
@@ -260,7 +320,35 @@ export default {
     onRequest (/*props*/) {
       // QTable emit — usamos nuestro fetch con meta/pagination del backend
     },
-
+    agregarGasto(){
+      this.dialogGasto = true
+    },
+    guardarGasto(){
+      if(!this.venta.name || !this.venta.total){
+        this.$q.notify?.({ type:'negative', message:'Complete todos los campos' })
+        return
+      }
+      this.loading = true
+      this.$axios.post('sales', {
+        name: this.venta.name,
+        total: this.venta.total,
+        type: 'EGRESO',
+        status: 'ACTIVO',
+        mesa: 'GASTO',
+        pago: 'EFECTIVO',
+        detalles: [],
+        products: []
+      }).then(() => {
+        this.$q.notify?.({ type:'positive', message:'Gasto agregado' })
+        this.dialogGasto = false
+        this.venta = {}
+        this.fetchSales()
+      }).catch(() => {
+        this.$q.notify?.({ type:'negative', message:'Error al guardar gasto' })
+      }).finally(() => {
+        this.loading = false
+      })
+    },
     async fetchSales () {
       this.loading = true
       try {

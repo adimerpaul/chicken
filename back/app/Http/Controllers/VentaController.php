@@ -10,6 +10,15 @@ use Carbon\Carbon;
 
 class VentaController extends Controller
 {
+    function anular(Venta $sale)
+    {
+        $sale->status = 'ANULADO';
+        $sale->save();
+
+        // Si manejas stock, este es el lugar para revertir las cantidades.
+
+        return response()->json(['message' => 'Venta anulada correctamente.']);
+    }
     // GET /sales (listado básico)
     public function index(Request $request)
     {
@@ -74,11 +83,11 @@ class VentaController extends Controller
             'llamada'=> ['nullable','integer','min:0'],
             'comment'=> ['nullable','string'],
 
-            'products'   => ['required','array','min:1'],
-            'products.*.id'           => ['nullable','integer'],
-            'products.*.name'         => ['required','string','max:255'],
-            'products.*.price'        => ['required','numeric','min:0'],
-            'products.*.cantidadSale' => ['required','numeric','min:1'],
+            'products'   => ['nullable','array'],
+//            'products.*.id'           => ['nullable','integer'],
+//            'products.*.name'         => ['nullable','string','max:255'],
+//            'products.*.price'        => ['nullable','numeric','min:0'],
+//            'products.*.cantidadSale' => ['nullable','numeric','min:1'],
         ]);
 
         return DB::transaction(function () use ($data, $request) {
@@ -93,6 +102,9 @@ class VentaController extends Controller
             $total = 0;
             foreach ($data['products'] as $item) {
                 $total += (float)$item['price'] * (float)$item['cantidadSale'];
+            }
+            if ($total <= 0) {
+                $total = $request->get('total', 0);
             }
 
             $venta = Venta::create([

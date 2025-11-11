@@ -12,10 +12,10 @@ class Venta extends Model
         'type','status','mesa','pago','numero','comment','llamada'
     ];
 
-    protected $casts = [
-        'date' => 'date',
-        'time' => 'datetime:H:i:s',
-    ];
+//    protected $casts = [
+//        'date' => 'date',
+//        'time' => 'datetime:H:i:s',
+//    ];
 
     public function detalles() {
         return $this->hasMany(VentaDetalle::class, 'venta_id');

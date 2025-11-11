@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\InsumoProducto;
 use App\Models\Producto;
 use App\Models\User;
 use App\Models\Insumo;
@@ -208,6 +209,90 @@ class DatabaseSeeder extends Seeder
             Producto::updateOrCreate(
                 ['name' => $p['name'], 'categoria' => $p['categoria']],
                 $p
+            );
+        }
+//        1. Los insumos de papá y arroz,  por ahora colócalo 200 gramos de papá y 100 gramos de arroz, ya cuando sirvamos loedimos biencito.
+//    2. Las presas son junior=1presa, duo= 2 presas  familiar = 5 presas
+        $insumoProductos = [
+            [
+                "producto_id" => Producto::where('name', 'Junior')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Pollo (presa)')->first()->id,
+                "cantidad"    => 1,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Junior')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Arroz')->first()->id,
+                "cantidad"    => 0.1,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Junior')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Papa')->first()->id,
+                "cantidad"    => 0.2,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Doble')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Pollo (presa)')->first()->id,
+                "cantidad"    => 2,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Doble')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Arroz')->first()->id,
+                "cantidad"    => 0.2,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Doble')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Papa')->first()->id,
+                "cantidad"    => 0.2,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Familiar')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Pollo (presa)')->first()->id,
+                "cantidad"    => 5,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Familiar')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Arroz')->first()->id,
+                "cantidad"    => 0.4,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Familiar')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Papa')->first()->id,
+                "cantidad"    => 0.4,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Porción de papas')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Papa')->first()->id,
+                "cantidad"    => 0.2,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Porción de arroz')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Arroz')->first()->id,
+                "cantidad"    => 0.1,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Porción de plátano')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Plátano')->first()->id,
+                "cantidad"    => 1,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Gaseosa 2 litros')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Gaseosa 2 litros')->first()->id,
+                "cantidad"    => 1,
+            ],
+            [
+                "producto_id" => Producto::where('name', 'Gaseosa 1 litro')->first()->id,
+                "insumo_id"   => Insumo::where('nombre', 'Gaseosa 1 litro')->first()->id,
+                "cantidad"    => 1,
+            ],
+        ];
+
+        foreach ($insumoProductos as $ip) {
+            InsumoProducto::create(
+                [
+                    'producto_id' => $ip['producto_id'],
+                    'insumo_id'   => $ip['insumo_id'],
+                    'cantidad'    => $ip['cantidad'],
+                ],
             );
         }
     }
