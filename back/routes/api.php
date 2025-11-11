@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\ReporteController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -50,5 +51,9 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::apiResource('sales', App\Http\Controllers\VentaController::class);
 //    http://localhost:8000/api/sales/3/anular
     Route::post('sales/{sale}/anular', [App\Http\Controllers\VentaController::class, 'anular']);
+
+
+    Route::get('reportes/ventas', [ReporteController::class, 'ventas']);      // KPIs, pagos, mesas, por_dia, por_usuario
+    Route::get('reportes/insumos', [ReporteController::class, 'insumos']);    // consumo y costo de insumos
 
 });
