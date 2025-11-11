@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\InsumoProducto;
 use App\Models\Venta;
 use App\Models\VentaDetalle;
 use Illuminate\Http\Request;
@@ -14,6 +15,20 @@ class VentaController extends Controller
     {
         $sale->status = 'ANULADO';
         $sale->save();
+        $insumosProductos = InsumoProducto::whereIn('producto_id', function($query) use ($sale) {
+            $query->select('product_id')
+                  ->from('venta_detalles')
+                  ->where('venta_id', $sale->id);
+        })->get();
+        foreach ($insumosProductos as $ip) {
+            $detalle = VentaDetalle::where('venta_id', $sale->id)
+                                   ->where('product_id', $ip->producto_id)
+                                   ->first();
+            if ($detalle) {
+                \App\Models\Insumo::where('id', $ip->insumo_id)
+                    ->increment('stock', $ip->cantidad * $detalle->qty);
+            }
+        }
 
         // Si manejas stock, este es el lugar para revertir las cantidades.
 
@@ -137,6 +152,10 @@ class VentaController extends Controller
 
                 // Si quieres manejar stock, este es el lugar para restar/sumar.
                 // Producto::where('id', $item['id'])->decrement('stock', $qty);
+                $insumosProductos = \App\Models\InsumoProducto::where('producto_id', $item['id'])->get();
+                foreach ($insumosProductos as $ip) {
+                    \App\Models\Insumo::where('id', $ip->insumo_id)->decrement('stock', $ip->cantidad * $qty);
+                }
             }
             $venta->detalles()->saveMany($detalles);
 
