@@ -124,7 +124,7 @@
         bordered
         dense
         :loading="loading"
-        :rows-per-page-options="[10,20,50]"
+        :rows-per-page-options="[10,20,50,0]"
         :pagination.sync="pagination"
         @request="onRequest"
       >
