@@ -33,8 +33,43 @@
 
           <div class="col-12 col-sm-8 text-right">
 <!--            btn agregar gasto-->
-            <q-btn flat color="primary" icon="add_circle" @click="agregarGasto" label="Agregar Gasto" no-caps class="q-mr-sm"/>
-            <q-btn flat color="primary" icon="refresh" :loading="loading" @click="fetchSales" label="Actualizar" no-caps class="q-mr-sm"/>
+<!--            crear venta-->
+            <q-btn
+              color="green"
+              icon="add_shopping_cart"
+              :to="{ path: '/ventas' }"
+              label="Crear Venta"
+              no-caps
+              class="q-mr-sm"
+            />
+            <q-btn
+              color="red"
+              icon="add_circle"
+              @click="agregarGasto"
+              label="Agregar Gasto"
+              no-caps
+              class="q-mr-sm"
+            />
+
+            <q-btn
+              color="blue"
+              icon="account_balance_wallet"
+              @click="agregarInicioCaja"
+              label="Inicio de Caja"
+              no-caps
+              class="q-mr-sm"
+            />
+
+            <q-btn
+              flat
+              color="primary"
+              icon="refresh"
+              :loading="loading"
+              @click="fetchSales"
+              label="Actualizar"
+              no-caps
+              class="q-mr-sm"
+            />
             <q-btn outline color="primary" icon="filter_alt_off" @click="resetFilters" label="Limpiar" no-caps/>
           </div>
         </div>
@@ -47,7 +82,7 @@
         <q-card flat bordered>
           <q-card-section class="q-pa-sm">
             <div class="text-caption text-grey">Total (filtrado)</div>
-            <div class="text-h6 text-bold">{{ money(summary.total || 0) }} Bs</div>
+            <div class="text-h6 text-bold">{{ sumIngreso }} Bs</div>
           </q-card-section>
         </q-card>
       </div>
@@ -55,7 +90,7 @@
         <q-card flat bordered>
           <q-card-section class="q-pa-sm">
             <div class="text-caption text-grey"># Ventas</div>
-            <div class="text-h6 text-bold">{{ summary.count || 0 }}</div>
+            <div class="text-h6 text-bold">{{ countIngreso }}</div>
           </q-card-section>
         </q-card>
       </div>
@@ -63,7 +98,7 @@
         <q-card flat bordered>
           <q-card-section class="q-pa-sm">
             <div class="text-caption text-grey">Ingreso</div>
-            <div class="text-h6 text-positive text-bold">{{ money(byType('INGRESO')) }} Bs</div>
+            <div class="text-h6 text-positive text-bold">{{ ingresoTotal }} Bs</div>
           </q-card-section>
         </q-card>
       </div>
@@ -72,7 +107,7 @@
           <q-card-section class="q-pa-sm">
             <div class="text-caption text-grey">Egreso/Caja</div>
             <div class="text-h6 text-bold">
-              {{ money(byType('EGRESO') + byType('CAJA')) }} Bs
+              {{ egresoCaja }} Bs
             </div>
           </q-card-section>
         </q-card>
@@ -226,6 +261,23 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+    <q-dialog v-model="dialogCaja" persistent>
+      <q-card style="width: 400px; max-width: 95vw">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1">
+            Inicio de Caja
+          </div>
+          <q-space/><q-btn flat round dense icon="close" @click="dialogCaja=false"/>
+        </q-card-section>
+        <q-card-section>
+          <div class="q-pa-sm">
+            <q-input v-model="caja.name" label="Descripción" outlined dense class="q-mb-sm"/>
+            <q-input v-model.number="caja.total" label="Monto inicial (Bs)" type="number" outlined dense class="q-mb-sm"/>
+            <q-btn label="Guardar" color="primary" @click="guardarInicioCaja" :loading="loading"/>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -235,6 +287,11 @@ export default {
   data () {
     const today = new Date().toISOString().slice(0,10)
     return {
+      dialogCaja: false,
+      caja: {
+        name: 'Inicio de Caja',
+        total: 0
+      },
       loading: false,
       rows: [],
       venta: {},
@@ -275,7 +332,95 @@ export default {
     }
   },
   mounted () { this.fetchSales() },
+  computed : {
+    sumIngreso () {
+      let sum = 0;
+      (this.rows || []).forEach(item => {
+        // constrolas staus activo
+        if (
+          item.type === 'INGRESO'
+          && item.status === 'ACTIVO'
+        ) sum += Number(item.total || 0)
+      })
+      // sumar el tipo caja
+      sum += (this.rows || []).reduce((acc, item) => {
+        if (item.type === 'CAJA'
+          && item.status === 'ACTIVO'
+        ) return acc + Number(item.total || 0)
+        return acc
+      }, 0)
+      sum += (this.rows || []).reduce((acc, item) => {
+        if (item.type === 'EGRESO'
+          && item.status === 'ACTIVO'
+        ) return acc - Number(item.total || 0)
+        return acc
+      }, 0)
+      return this.money(sum)
+    },
+    ingresoTotal() {
+      let sum = 0;
+      (this.summary.by_type || []).forEach(item => {
+        if (item.type === 'INGRESO'
+          && item.status === 'ACTIVO'
+        ) sum += Number(item.total || 0)
+      })
+      return this.money(sum)
+    },
+    countIngreso () {
+      let count = 0;
+      (this.rows || []).forEach(item => {
+        if (item.type === 'INGRESO'
+          && item.status === 'ACTIVO'
+        ) count += 1
+      })
+      return count
+    },
+    egresoCaja () {
+      let sum = 0;
+      (this.summary.by_type || []).forEach(item => {
+        if (item.type === 'EGRESO'
+          && item.status === 'ACTIVO'
+        ) sum += Number(item.total || 0)
+      })
+      return this.money(sum)
+    }
+  },
   methods: {
+    agregarInicioCaja () {
+      this.caja = {
+        name: 'Inicio de Caja',
+        total: 0
+      }
+      this.dialogCaja = true
+    },
+
+    guardarInicioCaja () {
+      if (!this.caja.total) {
+        this.$q.notify?.({ type: 'negative', message: 'Ingrese el monto inicial' })
+        return
+      }
+      this.loading = true
+      this.$axios.post('sales', {
+        name: this.caja.name || 'Inicio de Caja',
+        total: this.caja.total,
+        type: 'CAJA',          // <<< aquí marcamos que es inicio de caja
+        status: 'ACTIVO',
+        mesa: 'CAJA',          // puedes cambiar el texto si quieres
+        pago: 'EFECTIVO',
+        comment: 'Inicio de caja',
+        detalles: [],
+        products: []           // importante para que el backend no falle en el foreach
+      }).then(() => {
+        this.$q.notify?.({ type: 'positive', message: 'Inicio de caja registrado' })
+        this.dialogCaja = false
+        this.caja = { name: 'Inicio de Caja', total: 0 }
+        this.fetchSales()
+      }).catch(() => {
+        this.$q.notify?.({ type: 'negative', message: 'Error al guardar inicio de caja' })
+      }).finally(() => {
+        this.loading = false
+      })
+    },
     anularVenta(row) {
       this.$q.dialog({
         title: 'Confirmar Anulación',
