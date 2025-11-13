@@ -57,11 +57,37 @@
         </q-td>
       </template>
 
+<!--      <template v-slot:body-cell-stock="props">-->
+<!--        <q-td :props="props">-->
+<!--          <q-badge :color="badgeColor(props.row)" align="middle">-->
+<!--            {{ props.row.stock }} {{ props.row.unidad }}-->
+<!--          </q-badge>-->
+<!--        </q-td>-->
+<!--      </template>-->
       <template v-slot:body-cell-stock="props">
         <q-td :props="props">
-          <q-badge :color="badgeColor(props.row)" align="middle">
-            {{ props.row.stock }} {{ props.row.unidad }}
-          </q-badge>
+          <q-input
+            v-model.number="props.row.stock"
+            type="number"
+            dense
+            outlined
+            step="0.01"
+            style="max-width: 150px"
+            @update:model-value="updateStock(props.row)"
+            debounce="500"
+          >
+<!--            @blur="updateStock(props.row)"-->
+<!--            @keyup.enter="updateStock(props.row)"-->
+            <template #append>
+              <q-chip
+                dense
+                :color="props.row.min_stock && Number(props.row.stock) <= Number(props.row.min_stock) ? 'negative' : 'primary'"
+                text-color="white"
+              >
+                {{ props.row.unidad }}
+              </q-chip>
+            </template>
+          </q-input>
         </q-td>
       </template>
     </q-table>
@@ -141,6 +167,22 @@ export default {
     this.fetchRows()
   },
   methods: {
+    async updateStock (row) {
+      // evita llamadas si no hay id
+      if (!row.id) return
+
+      try {
+        // opcional: podrías poner un small flag row._updating = true
+        await this.$axios.put(`insumos/${row.id}`, {
+          stock: row.stock
+        })
+        this.$alert?.success?.('Stock actualizado')
+      } catch (e) {
+        this.$alert?.error?.(e.response?.data?.message || 'No se pudo actualizar el stock')
+      } finally {
+        // row._updating = false
+      }
+    },
     formatMoney (v) {
       v = Number(v || 0)
       return v.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
