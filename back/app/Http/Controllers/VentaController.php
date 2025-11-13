@@ -110,6 +110,34 @@ class VentaController extends Controller
             $date = $now->toDateString();
             $time = $now->toTimeString();
 
+//            si es tipo caja solo actulizar la caja
+            $type = $data['type'] ?? 'INGRESO';
+            if ($type === 'CAJA') {
+                $venta = Venta::where('date', $date)
+                    ->where('type', 'CAJA')
+                    ->first();
+                if (!$venta) {
+                    $venta = Venta::create([
+                        'date'   => $date,
+                        'time'   => $time,
+                        'total'  => 0,
+                        'name'   => 'CAJA DIARIA',
+                        'user_id'=> optional($request->user())->id,
+                        'client_id' => null,
+                        'type'   => 'CAJA',
+                        'status' => 'ACTIVO',
+                        'mesa'   => 'CAJA',
+                        'pago'   => 'EFECTIVO',
+                        'llamada'=> null,
+                        'comment'=> 'CAJA DIARIA',
+                        'numero' => 0,
+                    ]);
+                }
+                $venta->total = $request->get('total', 0);
+                $venta->save();
+                return $venta;
+            }
+
             // correlativo diario
             $numero = (int) (Venta::where('date', $date)->max('numero') ?? 0) + 1;
 
