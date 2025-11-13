@@ -68,6 +68,13 @@
               <div class="text-caption text-grey">{{ p.categoria || '—' }}</div>
               <q-space/>
               <q-btn dense round flat icon="edit" @click.stop="openEdit(p)" />
+              <q-btn
+                dense round flat
+                icon="inventory_2"
+                class="q-ml-xs"
+                @click.stop="openInsumos(p)"
+                :title="'Insumos del producto'"
+              />
 <!--              <q-btn dense round flat icon="add_shopping_cart" @click.stop="emitAdd(p)"/>-->
             </div>
           </q-card-section>
@@ -144,6 +151,97 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+    <!-- DIALOG INSUMOS DEL PRODUCTO -->
+    <q-dialog v-model="dlgInsumos" persistent>
+      <q-card style="width: 720px; max-width: 95vw">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1">
+            Insumos de: {{ manageProduct?.name || '' }}
+          </div>
+          <q-space/>
+          <q-btn flat round dense icon="close" @click="dlgInsumos = false" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          <!-- lista actual -->
+          <q-table
+            title="Insumos"
+            :rows="insumosProducto"
+            :columns="[
+              { name:'insumo', label:'Insumo', field: row => row.insumo?.nombre || '', align:'left' },
+              { name:'unidad', label:'Unidad', field: row => row.insumo?.unidad || '', align:'left' },
+              { name:'cantidad', label:'Cantidad', field:'cantidad', align:'right' },
+              { name:'actions', label:'', field:'id', align:'right' }
+            ]"
+            row-key="id"
+            dense flat bordered
+            :rows-per-page-options='[0]'
+          >
+            <template #body-cell-cantidad="props">
+              <q-td :props="props">
+                <q-input
+                  v-model.number="props.row.cantidad"
+                  type="number"
+                  dense outlined
+                  style="max-width:90px"
+                  @blur="updateInsumoProducto(props.row)"
+                />
+              </q-td>
+            </template>
+
+            <template #body-cell-actions="props">
+              <q-td :props="props">
+                <q-btn
+                  dense round flat
+                  icon="delete"
+                  color="negative"
+                  @click="deleteInsumoProducto(props.row)"
+                />
+              </q-td>
+            </template>
+          </q-table>
+
+          <q-inner-loading :showing="insumosLoading">
+            <q-spinner size="40px" />
+          </q-inner-loading>
+
+          <!-- agregar nuevo -->
+          <div class="q-mt-md">
+            <div class="text-subtitle2 q-mb-xs">Agregar insumo</div>
+            <div class="row q-col-gutter-sm items-center">
+              <div class="col-12 col-md-6">
+                <q-select
+                  v-model="nuevoInsumo.insumo_id"
+                  :options="insumosOptions"
+                  label="Insumo"
+                  dense outlined
+                  emit-value map-options
+                />
+              </div>
+              <div class="col-6 col-md-3">
+                <q-input
+                  v-model.number="nuevoInsumo.cantidad"
+                  type="number"
+                  dense outlined
+                  label="Cantidad"
+                />
+              </div>
+              <div class="col-6 col-md-3">
+                <q-btn
+                  color="primary"
+                  label="Agregar"
+                  no-caps
+                  class="full-width"
+                  :loading="insumosSaving"
+                  @click="addInsumoProducto"
+                />
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
   </q-page>
 </template>
 
@@ -178,7 +276,17 @@ export default {
         image_url: null
       },
       file: null,
-      saving: false
+      saving: false,
+      dlgInsumos: false,
+      manageProduct: null,
+      insumosProducto: [],   // relaciones insumo_producto
+      insumosOptions: [],    // lista de insumos para el select
+      nuevoInsumo: {
+        insumo_id: null,
+        cantidad: 1
+      },
+      insumosLoading: false,
+      insumosSaving: false,
     }
   },
   computed: {
@@ -194,6 +302,92 @@ export default {
   },
   mounted () { this.fetchProducts() },
   methods: {
+    openInsumos (p) {
+      this.manageProduct = p
+      this.dlgInsumos = true
+      this.nuevoInsumo = { insumo_id: null, cantidad: 1 }
+      this.fetchInsumosOptions()
+      this.fetchInsumosProducto()
+    },
+
+    async fetchInsumosOptions () {
+      // usa tu endpoint /insumos que ya existe
+      try {
+        const { data } = await this.$axios.get('insumos')
+        this.insumosOptions = (data || []).map(i => ({
+          label: `${i.nombre} (${i.unidad || ''})`,
+          value: i.id
+        }))
+      } catch (e) {
+        this.$q.notify({ type: 'negative', message: 'No se pudieron cargar los insumos' })
+      }
+    },
+
+    async fetchInsumosProducto () {
+      if (!this.manageProduct) return
+      this.insumosLoading = true
+      try {
+        // asumo endpoint: GET /productos/{id}/insumos
+        const { data } = await this.$axios.get(`productos/${this.manageProduct.id}/insumos`)
+        this.insumosProducto = Array.isArray(data) ? data : []
+      } catch (e) {
+        this.insumosProducto = []
+      } finally {
+        this.insumosLoading = false
+      }
+    },
+
+    async addInsumoProducto () {
+      if (!this.manageProduct || !this.nuevoInsumo.insumo_id) return
+      this.insumosSaving = true
+      try {
+        // POST /productos/{id}/insumos
+        const { data } = await this.$axios.post(
+          `productos/${this.manageProduct.id}/insumos`,
+          this.nuevoInsumo
+        )
+        this.insumosProducto.push(data)
+        this.nuevoInsumo = { insumo_id: null, cantidad: 1 }
+      } catch (e) {
+        this.$q.notify({ type: 'negative', message: 'No se pudo agregar el insumo' })
+      } finally {
+        this.insumosSaving = false
+      }
+    },
+
+    async updateInsumoProducto (row) {
+      if (!this.manageProduct || !row.id) return
+      // PUT /productos/{id}/insumos/{insumoProducto}
+      try {
+        await this.$axios.put(
+          `productos/${this.manageProduct.id}/insumos/${row.id}`,
+          { cantidad: row.cantidad }
+        )
+        this.$q.notify({ type: 'positive', message: 'Cantidad actualizada' })
+      } catch (e) {
+        this.$q.notify({ type: 'negative', message: 'No se pudo actualizar' })
+      }
+    },
+
+    async deleteInsumoProducto (row) {
+      if (!this.manageProduct || !row.id) return
+      this.$q.dialog({
+        title: 'Eliminar',
+        message: '¿Quitar este insumo del producto?',
+        cancel: true,
+        persistent: true
+      }).onOk(async () => {
+        try {
+          await this.$axios.delete(
+            `productos/${this.manageProduct.id}/insumos/${row.id}`
+          )
+          this.insumosProducto = this.insumosProducto.filter(r => r.id !== row.id)
+          this.$q.notify({ type: 'positive', message: 'Insumo eliminado' })
+        } catch (e) {
+          this.$q.notify({ type: 'negative', message: 'No se pudo eliminar' })
+        }
+      })
+    },
     toMoney (v) { return Number(v || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
     selectCategory (id) { this.categoryId = id; this.fetchProducts() },
 

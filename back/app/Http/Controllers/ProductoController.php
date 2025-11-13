@@ -6,9 +6,66 @@ use App\Models\Producto;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
-
+use App\Models\InsumoProducto;
+use App\Models\Insumo;
 class ProductoController extends Controller
 {
+    // ================= INSUMOS DEL PRODUCTO =================
+
+    // GET /productos/{product}/insumos
+    public function insumosIndex(Producto $product)
+    {
+        return InsumoProducto::with('insumo')
+            ->where('producto_id', $product->id)
+            ->orderBy('id')
+            ->get();
+    }
+
+    // POST /productos/{product}/insumos
+    public function insumosStore(Request $request, Producto $product)
+    {
+        // validación simple
+        $data = $request->validate([
+            'insumo_id' => ['required', 'exists:insumos,id'],
+            'cantidad'  => ['required', 'numeric'],
+        ]);
+
+        $data['producto_id'] = $product->id;
+
+        $rel = InsumoProducto::create($data);
+
+        // para que el front reciba el insumo embebido
+        return $rel->load('insumo');
+    }
+
+    // PUT /productos/{product}/insumos/{insumoProducto}
+    public function insumosUpdate(Request $request, Producto $product, InsumoProducto $insumoProducto)
+    {
+        // nos aseguramos que la relación pertenece a ese producto
+        if ($insumoProducto->producto_id !== $product->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'cantidad' => ['required', 'numeric'],
+        ]);
+
+        $insumoProducto->update($data);
+
+        return $insumoProducto->load('insumo');
+    }
+
+    // DELETE /productos/{product}/insumos/{insumoProducto}
+    public function insumosDestroy(Producto $product, InsumoProducto $insumoProducto)
+    {
+        if ($insumoProducto->producto_id !== $product->id) {
+            abort(404);
+        }
+
+        $insumoProducto->delete();
+
+        return response()->json(['message' => 'Insumo eliminado del producto']);
+    }
     // GET /products  (lista con filtros básicos)
     public function index(Request $req)
     {

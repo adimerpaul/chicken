@@ -48,6 +48,11 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::put('/productos/{product}',[ProductoController::class, 'update']);
     Route::delete('/productos/{product}',[ProductoController::class, 'destroy']);
 
+    Route::get('/productos/{product}/insumos', [ProductoController::class, 'insumosIndex']);
+    Route::post('/productos/{product}/insumos', [ProductoController::class, 'insumosStore']);
+    Route::put('/productos/{product}/insumos/{insumoProducto}', [ProductoController::class, 'insumosUpdate']);
+    Route::delete('/productos/{product}/insumos/{insumoProducto}', [ProductoController::class, 'insumosDestroy']);
+
     Route::apiResource('sales', App\Http\Controllers\VentaController::class);
 //    http://localhost:8000/api/sales/3/anular
     Route::post('sales/{sale}/anular', [App\Http\Controllers\VentaController::class, 'anular']);
