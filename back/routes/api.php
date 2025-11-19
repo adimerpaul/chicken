@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\CierreCajaController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\VentaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -60,5 +62,11 @@ Route::middleware('auth:sanctum')->group(callback: function () {
 
     Route::get('reportes/ventas', [ReporteController::class, 'ventas']);      // KPIs, pagos, mesas, por_dia, por_usuario
     Route::get('reportes/insumos', [ReporteController::class, 'insumos']);    // consumo y costo de insumos
+
+    Route::post('cierres-caja', [CierreCajaController::class, 'store']);
+    Route::get('cierres-caja/{cierreCaja}', [CierreCajaController::class, 'show']);
+    Route::get('cierres-caja-ultimo', [CierreCajaController::class, 'ultimo']);
+
+    Route::get('sales/report/by-user', [VentaController::class, 'resumenPorUsuario']);
 
 });

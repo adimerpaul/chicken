@@ -197,4 +197,89 @@ class VentaController extends Controller
     {
         return $sale->load('detalles','user');
     }
+    public function resumenPorUsuario(Request $request)
+    {
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
+        $userId   = $request->input('user_id'); // opcional
+
+        $query = Venta::with('user')
+            ->where('status', 'ACTIVO');
+
+        if ($dateFrom) {
+            $query->whereDate('date', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('date', '<=', $dateTo);
+        }
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        $ventas = $query->get();
+
+        // Resumen de ventas por usuario
+        $usuarios = $ventas->groupBy('user_id')->map(function ($rows) {
+            $u = $rows->first()->user;
+
+            $ingresos = $rows->where('type', 'INGRESO')->sum('total');
+            $egresos  = $rows->where('type', 'EGRESO')->sum('total');
+            $cajaIni  = $rows->where('type', 'CAJA')->sum('total');
+            $tickets  = $rows->where('type', 'INGRESO')->count();
+
+            return [
+                'user_id'   => $u->id,
+                'user_name' => $u->name,
+                'total_ingresos' => $ingresos,
+                'total_egresos'  => $egresos,
+                'total_caja'     => $cajaIni,
+                'neto'           => $ingresos + $cajaIni - $egresos,
+                'tickets'        => $tickets,
+            ];
+        })->values();
+
+        // Productos por usuario
+        $detalles = VentaDetalle::with('venta.user')
+            ->whereHas('venta', function ($q) use ($dateFrom, $dateTo, $userId) {
+                $q->where('status', 'ACTIVO');
+                if ($dateFrom) {
+                    $q->whereDate('date', '>=', $dateFrom);
+                }
+                if ($dateTo) {
+                    $q->whereDate('date', '<=', $dateTo);
+                }
+                if ($userId) {
+                    $q->where('user_id', $userId);
+                }
+                $q->where('type', 'INGRESO');
+            })
+            ->get();
+
+        $productos = $detalles->groupBy(function ($d) {
+            return $d->venta->user_id;
+        })->map(function ($rows, $userId) {
+            $userName = optional($rows->first()->venta->user)->name;
+
+            $items = $rows->groupBy('product_id')->map(function ($items) {
+                $first = $items->first();
+                return [
+                    'product_id' => $first->product_id,
+                    'name'       => $first->name,
+                    'qty'        => $items->sum('qty'),
+                    'subtotal'   => $items->sum('subtotal'),
+                ];
+            })->values();
+
+            return [
+                'user_id'   => $userId,
+                'user_name' => $userName,
+                'items'     => $items,
+            ];
+        })->values();
+
+        return response()->json([
+            'usuarios'  => $usuarios,
+            'productos' => $productos,
+        ]);
+    }
 }
