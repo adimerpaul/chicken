@@ -22,4 +22,10 @@ class Venta extends Model
     public function detalles() {
         return $this->hasMany(VentaDetalle::class, 'venta_id');
     }
+    function user() {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+//    function client() {
+//        return $this->belongsTo(Client::class, 'client_id');
+//    }
 }

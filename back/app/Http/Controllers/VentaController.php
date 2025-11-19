@@ -55,7 +55,7 @@ class VentaController extends Controller
                         ->orWhere('comment','like',"%$q%");
                 });
             })
-            ->with('detalles');
+            ->with('detalles', 'user');
 
         // Summary del conjunto filtrado
         $forAgg  = clone $q;
@@ -188,13 +188,13 @@ class VentaController extends Controller
             $venta->detalles()->saveMany($detalles);
 
             // respuesta completa para imprimir
-            return $venta->load('detalles');
+            return $venta->load('detalles','user');
         });
     }
 
     // GET /sales/{venta}
     public function show(Venta $sale)
     {
-        return $sale->load('detalles');
+        return $sale->load('detalles','user');
     }
 }
