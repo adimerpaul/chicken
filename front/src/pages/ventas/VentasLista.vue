@@ -151,29 +151,28 @@
         </template>
 
         <template #body-cell-actions="props">
-          <q-td :props="props" class="">
-<!--            <q-btn dense flat round icon="visibility" @click="openDetail(props.row)"/>-->
-<!--            <q-btn dense flat round icon="edit" v-if="props.row.status === 'ACTIVO'" :to="`/ventas/editar/${props.row.id}`"/>-->
-            <!-- Si tienes impresión -->
-            <!-- <q-btn dense flat round icon="print" @click="printTicket(props.row)"/> -->
+          <q-td :props="props">
             <q-btn-dropdown dense label="Opciones" no-caps size="xs" color="primary">
               <q-list>
                 <q-item clickable @click="openDetail(props.row)" v-close-popup>
-                  <q-item-section avatar>
-                    <q-icon name="visibility"/>
-                  </q-item-section>
+                  <q-item-section avatar><q-icon name="visibility" /></q-item-section>
                   <q-item-section>Ver Detalle</q-item-section>
                 </q-item>
+
+                <q-item clickable @click="printTicket(props.row)" v-close-popup>
+                  <q-item-section avatar><q-icon name="print" /></q-item-section>
+                  <q-item-section>Imprimir ticket</q-item-section>
+                </q-item>
+
                 <q-item clickable v-if="props.row.status === 'ACTIVO'" @click="anularVenta(props.row)" v-close-popup>
-                  <q-item-section avatar>
-                    <q-icon name="cancel"/>
-                  </q-item-section>
+                  <q-item-section avatar><q-icon name="cancel" /></q-item-section>
                   <q-item-section>Anular Venta</q-item-section>
                 </q-item>
               </q-list>
             </q-btn-dropdown>
           </q-td>
         </template>
+
 
         <template #no-data>
           <div class="full-width row flex-center q-pa-lg text-grey">
@@ -278,10 +277,13 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+    <div id="myelement" class="hidden"></div>
   </q-page>
 </template>
 
 <script>
+import { Imprimir } from 'src/utils/ImprimirTicket'
+
 export default {
   name: 'VentasListado',
   data () {
@@ -549,6 +551,18 @@ export default {
       // si quieres “refrescar” detalles por id:
       // this.$axios.get(`sales/${row.id}`).then(r => { this.current = r.data; this.dlg = true })
       this.dlg = true
+    },
+    async printTicket (row) {
+      try {
+        // Traemos la venta con detalles completos
+        const { data } = await this.$axios.get(`sales/${row.id}`)
+        Imprimir.ticket(data)
+      } catch (e) {
+        this.$q.notify?.({
+          type: 'negative',
+          message: 'No se pudo imprimir el ticket'
+        })
+      }
     },
 
     // printTicket (row) { Imprimir.recibo(row) }

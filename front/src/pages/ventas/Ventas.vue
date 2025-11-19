@@ -192,10 +192,13 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+    <div id="myelement" class="hidden"></div>
   </q-page>
 </template>
 
 <script>
+import { Imprimir } from 'src/utils/ImprimirTicket' // ajusta la ruta
+
 export default {
   name: 'VentasPage',
   data () {
@@ -328,8 +331,11 @@ export default {
         const { data } = await this.$axios.post('sales', payload)
         this.$q.notify?.({ type:'positive', message:'Venta realizada' })
         // limpia y cierra
+        Imprimir.ticket(data)
         this.cart = []
         this.payDlg = false
+        this.client = { ci: '', name: 'SN', mesa: 'MESA', pago: 'EFECTIVO', llamada: 0, comment: '' }
+        this.recibido = ''
         // si imprimes recibo:
         // Imprimir.recibo(data)
       } catch (e) {
