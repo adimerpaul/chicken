@@ -266,4 +266,258 @@ export class Imprimir {
     }
     return el
   }
+  static cierreCaja (cierre) {
+    if (!cierre) return
+
+    const date = cierre.date || ''
+    const userName = cierre.user?.name || ''
+    const totalIngresos = Number(cierre.total_ingresos || 0)
+    const totalEgresos = Number(cierre.total_egresos || 0)
+    const totalCajaIni = Number(cierre.total_caja_inicial || 0)
+    const tickets = Number(cierre.tickets || 0)
+    const montoSistema = Number(cierre.monto_sistema || 0)
+    const montoEfectivo = Number(cierre.monto_efectivo || 0)
+    const diferencia = Number(cierre.diferencia || 0)
+    const obs = cierre.observacion || ''
+
+    const logoSrc = `${window.location.origin}/chicken-logo.png`
+
+    const html = `
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; }
+      .ticket-wrapper {
+        width: 7.2cm;
+        padding: 4px 6px;
+        font-size: 11px;
+      }
+      .center { text-align: center; }
+      .bold { font-weight: bold; }
+      .logo img {
+        max-width: 80px;
+        display: block;
+        margin: 0 auto 2px auto;
+      }
+      hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+
+      .titulo {
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 4px;
+      }
+
+      .resumen-row {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2px;
+      }
+      .resumen-row span:first-child {
+        font-weight: bold;
+      }
+      .pie {
+        margin-top: 6px;
+        font-size: 9px;
+        text-align: center;
+      }
+      .usuario {
+        margin-top: 2px;
+        font-size: 9px;
+        font-weight: bold;
+      }
+    </style>
+
+    <div class="ticket-wrapper">
+      <div class="logo">
+        <img src="${logoSrc}" alt="Chicken's Garden">
+      </div>
+
+      <div class="titulo">CIERRE DE CAJA</div>
+      <div class="center">Fecha: ${date}</div>
+      <div class="center">Usuario: ${userName}</div>
+      <hr>
+
+      <div class="resumen-row"><span>Ingresos:</span><span>${totalIngresos.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Egresos:</span><span>${totalEgresos.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Caja inicial:</span><span>${totalCajaIni.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Tickets:</span><span>${tickets}</span></div>
+      <hr>
+      <div class="resumen-row"><span>Sistema:</span><span>${montoSistema.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Efectivo contado:</span><span>${montoEfectivo.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Diferencia:</span><span>${diferencia.toFixed(2)} Bs</span></div>
+
+      ${obs
+      ? `<div class="pie" style="margin-top:4px;">Obs: ${obs}</div>`
+      : ''
+    }
+
+      <hr>
+      <div class="pie">Gracias por su trabajo</div>
+      <div class="usuario">Firmado: ____________________</div>
+    </div>
+  `
+
+    const area = Imprimir._getArea()
+    area.innerHTML = html
+    const d = new Printd()
+    d.print(area)
+  }
+  static reporteUsuarios (data) {
+    const usuarios = data?.usuarios || []
+    const dateFrom = data?.date_from || ''
+    const dateTo = data?.date_to || ''
+
+    const logoSrc = `${window.location.origin}/chicken-logo.png`
+
+    let filas = ''
+    let totalNeto = 0
+
+    usuarios.forEach(u => {
+      const neto = Number(u.neto || 0)
+      totalNeto += neto
+      filas += `
+      <tr>
+        <td>${u.user_name}</td>
+        <td class="num">${Number(u.total_ingresos || 0).toFixed(2)}</td>
+        <td class="num">${Number(u.total_egresos || 0).toFixed(2)}</td>
+        <td class="num">${Number(u.total_caja || 0).toFixed(2)}</td>
+        <td class="num">${neto.toFixed(2)}</td>
+        <td class="num">${Number(u.tickets || 0)}</td>
+      </tr>
+    `
+    })
+
+    const html = `
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; }
+      .ticket-wrapper {
+        width: 8cm;
+        padding: 4px 6px;
+        font-size: 10px;
+      }
+      .center { text-align: center; }
+      .logo img { max-width: 70px; display:block; margin:0 auto 2px auto; }
+      hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+      table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+      th, td {
+        border: 1px solid #000;
+        padding: 2px 3px;
+      }
+      th { font-size: 9px; }
+      .num { text-align: right; }
+      .pie { margin-top: 4px; text-align:center; font-size:9px; }
+    </style>
+
+    <div class="ticket-wrapper">
+      <div class="logo">
+        <img src="${logoSrc}" alt="Chicken's Garden">
+      </div>
+      <div class="center" style="font-weight:bold;">RESUMEN DE VENTAS POR USUARIO</div>
+      <div class="center">Desde: ${dateFrom || '-'} Hasta: ${dateTo || '-'}</div>
+      <hr>
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Ingreso</th>
+            <th>Egreso</th>
+            <th>Caja</th>
+            <th>Neto</th>
+            <th>Tickets</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas || '<tr><td colspan="6" class="center">Sin datos</td></tr>'}
+        </tbody>
+      </table>
+      <div class="pie">Total neto: ${totalNeto.toFixed(2)} Bs</div>
+    </div>
+  `
+
+    const area = Imprimir._getArea()
+    area.innerHTML = html
+    const d = new Printd()
+    d.print(area)
+  }
+  static reporteProductosPorUsuario (data) {
+    const productos = data?.productos || []
+    const logoSrc = `${window.location.origin}/chicken-logo.png`
+
+    let htmlBody = ''
+
+    productos.forEach(bloque => {
+      const userName = bloque.user_name
+      let filas = ''
+
+      bloque.items.forEach(it => {
+        filas += `
+        <tr>
+          <td>${it.name}</td>
+          <td class="num">${Number(it.qty || 0)}</td>
+          <td class="num">${Number(it.subtotal || 0).toFixed(2)}</td>
+        </tr>
+      `
+      })
+
+      htmlBody += `
+      <div class="user-block">
+        <div class="user-title">Usuario: ${userName}</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Cant.</th>
+              <th>Total Bs</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filas || '<tr><td colspan="3">Sin productos</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      <hr>
+    `
+    })
+
+    const html = `
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; }
+      .ticket-wrapper {
+        width: 8cm;
+        padding: 4px 6px;
+        font-size: 10px;
+      }
+      .center { text-align: center; }
+      .logo img { max-width: 70px; display:block; margin:0 auto 2px auto; }
+      hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+      table { width: 100%; border-collapse: collapse; margin-top: 3px; }
+      th, td {
+        border: 1px solid #000;
+        padding: 2px 3px;
+      }
+      th { font-size: 9px; }
+      .num { text-align: right; }
+      .user-title { font-weight:bold; margin-top:4px; }
+    </style>
+
+    <div class="ticket-wrapper">
+      <div class="logo">
+        <img src="${logoSrc}" alt="Chicken's Garden">
+      </div>
+      <div class="center" style="font-weight:bold;">PRODUCTOS POR USUARIO</div>
+      <hr>
+      ${htmlBody || '<div class="center">Sin datos</div>'}
+    </div>
+  `
+
+    const area = Imprimir._getArea()
+    area.innerHTML = html
+    const d = new Printd()
+    d.print(area)
+  }
+
+
+
 }

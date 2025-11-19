@@ -32,6 +32,37 @@
           </div>
 
           <div class="col-12 col-sm-8 text-right">
+            <q-btn
+              color="orange"
+              icon="lock"
+              @click="abrirCierreCaja"
+              label="Cierre de Caja"
+              no-caps
+              class="q-mr-sm"
+            />
+
+            <q-btn-dropdown
+              color="purple"
+              icon="print"
+              label="Reportes"
+              no-caps
+              class="q-mr-sm"
+            >
+              <q-list>
+                <q-item clickable @click="printResumenUsuarios" v-close-popup>
+                  <q-item-section avatar><q-icon name="groups" /></q-item-section>
+                  <q-item-section>Ventas por usuario</q-item-section>
+                </q-item>
+                <q-item clickable @click="printProductosUsuarios" v-close-popup>
+                  <q-item-section avatar><q-icon name="restaurant" /></q-item-section>
+                  <q-item-section>Productos por usuario</q-item-section>
+                </q-item>
+                <q-item clickable @click="printUltimoCierre" v-close-popup>
+                  <q-item-section avatar><q-icon name="lock" /></q-item-section>
+                  <q-item-section>Último cierre de caja</q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
 <!--            btn agregar gasto-->
 <!--            crear venta-->
             <q-btn
@@ -239,6 +270,47 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+    <q-dialog v-model="dialogCierre" persistent>
+      <q-card style="width: 400px; max-width: 95vw">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1">
+            Cierre de Caja
+          </div>
+          <q-space/><q-btn flat round dense icon="close" @click="dialogCierre=false"/>
+        </q-card-section>
+        <q-card-section>
+          <div class="q-pa-sm">
+            <q-input
+              v-model="cierre.date"
+              type="date"
+              label="Fecha"
+              outlined dense
+              class="q-mb-sm"
+            />
+            <q-input
+              v-model.number="cierre.monto_efectivo"
+              type="number"
+              label="Efectivo contado (Bs)"
+              outlined dense
+              class="q-mb-sm"
+            />
+            <q-input
+              v-model="cierre.observacion"
+              type="textarea"
+              label="Observación"
+              outlined dense
+              class="q-mb-sm"
+            />
+            <q-btn
+              label="Guardar y imprimir"
+              color="primary"
+              @click="guardarCierreCaja"
+              :loading="loading"
+            />
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
 <!--    dialogGasto-->
     <q-dialog v-model="dialogGasto" persistent>
       <q-card style="width: 400px; max-width: 95vw">
@@ -289,6 +361,12 @@ export default {
   data () {
     const today = new Date().toISOString().slice(0,10)
     return {
+      dialogCierre: false,
+      cierre: {
+        date: today,
+        monto_efectivo: 0,
+        observacion: ''
+      },
       dialogCaja: false,
       caja: {
         name: 'Inicio de Caja',
@@ -388,6 +466,78 @@ export default {
     }
   },
   methods: {
+    abrirCierreCaja () {
+      const today = new Date().toISOString().slice(0, 10)
+      this.cierre = {
+        date: this.filters.date_from || today,
+        monto_efectivo: 0,
+        observacion: ''
+      }
+      this.dialogCierre = true
+    },
+
+    async guardarCierreCaja () {
+      if (!this.cierre.monto_efectivo) {
+        this.$q.notify?.({ type: 'negative', message: 'Ingrese el efectivo contado' })
+        return
+      }
+      this.loading = true
+      try {
+        const { data } = await this.$axios.post('cierres-caja', this.cierre)
+        this.$q.notify?.({ type: 'positive', message: 'Cierre de caja registrado' })
+        this.dialogCierre = false
+        // Imprimir ticket de cierre
+        Imprimir.cierreCaja(data)
+      } catch (e) {
+        this.$q.notify?.({
+          type: 'negative',
+          message: 'Error al registrar cierre de caja'
+        })
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async printResumenUsuarios () {
+      try {
+        const params = { ...this.filters }
+        const { data } = await this.$axios.get('sales/report/by-user', { params })
+        // le paso también el rango de fechas para que se muestre en el ticket
+        data.date_from = this.filters.date_from
+        data.date_to = this.filters.date_to
+        Imprimir.reporteUsuarios(data)
+      } catch (e) {
+        this.$q.notify?.({
+          type: 'negative',
+          message: 'No se pudo generar el reporte de usuarios'
+        })
+      }
+    },
+
+    async printProductosUsuarios () {
+      try {
+        const params = { ...this.filters }
+        const { data } = await this.$axios.get('sales/report/by-user', { params })
+        Imprimir.reporteProductosPorUsuario(data)
+      } catch (e) {
+        this.$q.notify?.({
+          type: 'negative',
+          message: 'No se pudo generar el reporte de productos'
+        })
+      }
+    },
+
+    async printUltimoCierre () {
+      try {
+        const { data } = await this.$axios.get('cierres-caja-ultimo')
+        Imprimir.cierreCaja(data)
+      } catch (e) {
+        this.$q.notify?.({
+          type: 'negative',
+          message: 'No se encontró un cierre de caja'
+        })
+      }
+    },
     agregarInicioCaja () {
       this.caja = {
         name: 'Inicio de Caja',
