@@ -24,6 +24,7 @@ return new class extends Migration
             $table->double('subtotal')->default(0);
 
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('venta_id')->references('id')->on('ventas')->cascadeOnDelete();
             $table->foreign('product_id')->references('id')->on('productos')->nullOnDelete();

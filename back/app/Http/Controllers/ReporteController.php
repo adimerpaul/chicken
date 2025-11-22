@@ -17,7 +17,9 @@ class ReporteController extends Controller
         $base = DB::table('ventas as v')
             ->when($df,  fn ($q) => $q->where('v.date', '>=', $df))
             ->when($dt,  fn ($q) => $q->where('v.date', '<=', $dt))
-            ->when($uid, fn ($q) => $q->where('v.user_id', $uid));
+            ->when($uid, fn ($q) => $q->where('v.user_id', $uid))
+            // >>> ignorar ventas soft-deleted
+            ->whereNull('v.deleted_at');
 
         // Totales principales
         $ingresos = (clone $base)
@@ -37,6 +39,8 @@ class ReporteController extends Controller
         // Ítems vendidos
         $items = (clone $base)
             ->join('venta_detalles as d', 'd.venta_id', '=', 'v.id')
+            // >>> ignorar detalles soft-deleted (si la tabla tiene deleted_at)
+            ->whereNull('d.deleted_at')
             ->where('v.status', '!=', 'ANULADO')
             ->sum('d.qty');
 
@@ -89,7 +93,7 @@ class ReporteController extends Controller
                 return $r;
             });
 
-        // Totales por usuario (por si luego quieres usarlo)
+        // Totales por usuario
         $por_usuario = (clone $base)
             ->leftJoin('users as u', 'u.id', '=', 'v.user_id')
             ->select(
@@ -98,6 +102,8 @@ class ReporteController extends Controller
                 DB::raw("SUM(CASE WHEN v.type='INGRESO' AND v.status!='ANULADO' THEN v.total ELSE 0 END) as ingreso"),
                 DB::raw("SUM(CASE WHEN v.type='EGRESO'  AND v.status!='ANULADO' THEN v.total ELSE 0 END) as egreso")
             )
+            // >>> opcional: si users también tiene deleted_at
+            // ->whereNull('u.deleted_at')
             ->groupBy('v.user_id', 'u.name')
             ->get()
             ->map(function ($r) {
@@ -119,11 +125,11 @@ class ReporteController extends Controller
                 'items'           => (float)$items,
                 'ticket_promedio' => (float)$ticket_prom,
             ],
-            'pagos'      => $pagos,
-            'qr'         => ['total' => round($qr_total, 2), 'items' => (int)$qr_items],
-            'mesas'      => $mesas,
-            'por_dia'    => $por_dia,
-            'por_usuario'=> $por_usuario,
+            'pagos'       => $pagos,
+            'qr'          => ['total' => round($qr_total, 2), 'items' => (int)$qr_items],
+            'mesas'       => $mesas,
+            'por_dia'     => $por_dia,
+            'por_usuario' => $por_usuario,
         ]);
     }
 
@@ -143,7 +149,13 @@ class ReporteController extends Controller
             ->when($dt,  fn ($qq) => $qq->where('v.date', '<=', $dt))
             ->when($uid, fn ($qq) => $qq->where('v.user_id', $uid))
             ->where('v.type', 'INGRESO')
-            ->where('v.status', '!=', 'ANULADO');
+            ->where('v.status', '!=', 'ANULADO')
+            // >>> ignorar soft-deletes en todas las tablas relevantes
+            ->whereNull('v.deleted_at')
+            ->whereNull('d.deleted_at')
+            // si estas tablas tienen deleted_at:
+            // ->whereNull('ip.deleted_at')
+            ->whereNull('i.deleted_at');
 
         $rows = $q->select(
             'i.id as insumo_id',
@@ -182,6 +194,7 @@ class ReporteController extends Controller
             ->when($uid, fn ($qq) => $qq->where('v.user_id', $uid))
             ->where('v.type', 'INGRESO')
             ->where('v.status', '!=', 'ANULADO')
+            ->whereNull('v.deleted_at') // >>> ignorar ventas soft-deleted
             ->sum('v.total');
 
         return response()->json([

@@ -30,6 +30,10 @@ class InsumoController extends Controller
     // PUT /insumos/{id}
     public function update(Request $request, $id)
     {
+        $stock = $request->input('stock');
+        if ($stock == '') {
+            return false;
+        }
         $insumo = Insumo::findOrFail($id);
         $insumo->update($request->all());
         return $insumo;
