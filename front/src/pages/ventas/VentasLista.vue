@@ -115,8 +115,8 @@
       <div class="col-12 col-sm-3">
         <q-card flat bordered>
           <q-card-section class="q-pa-sm">
-            <div class="text-caption text-grey">Total (filtrado)</div>
-            <div class="text-h6 text-bold">{{ sumIngreso }} Bs</div>
+            <div class="text-caption text-grey">Total</div>
+            <div class="text-h6 text-bold">{{ total }} Bs</div>
           </q-card-section>
         </q-card>
       </div>
@@ -140,7 +140,7 @@
         <q-card flat bordered>
           <q-card-section class="q-pa-sm">
             <div class="text-caption text-grey">Egreso/Caja</div>
-            <div class="text-h6 text-bold">
+            <div class="text-h6 text-bold text-red">
               {{ egresoCaja }} Bs
             </div>
           </q-card-section>
@@ -420,6 +420,14 @@ export default {
   },
   mounted () { this.fetchSales() },
   computed : {
+    total(){
+      const ingresosActivos = this.rows.filter(r => r.type === 'INGRESO' && r.status === 'ACTIVO')
+      const egresosActivos = this.rows.filter(r => r.type === 'EGRESO' && r.status === 'ACTIVO')
+      return this.money(
+        ingresosActivos.reduce((a,b) => a + Number(b.total || 0), 0)
+        - egresosActivos.reduce((a,b) => a + Number(b.total || 0), 0)
+      )
+    },
     sumIngreso () {
       let sum = 0;
       (this.rows || []).forEach(item => {
@@ -446,7 +454,7 @@ export default {
     },
     ingresoTotal() {
       let sum = 0;
-      (this.summary.by_type || []).forEach(item => {
+      this.rows.forEach(item => {
         if (item.type === 'INGRESO'
           && item.status === 'ACTIVO'
         ) sum += Number(item.total || 0)
@@ -464,7 +472,7 @@ export default {
     },
     egresoCaja () {
       let sum = 0;
-      (this.summary.by_type || []).forEach(item => {
+      this.rows.forEach(item => {
         if (item.type === 'EGRESO'
           && item.status === 'ACTIVO'
         ) sum += Number(item.total || 0)
