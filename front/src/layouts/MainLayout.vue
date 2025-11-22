@@ -119,7 +119,7 @@
 <!--        'Ventas',-->
 <!--        'Compras',-->
 <!--        'Reportes',-->
-        <q-item dense to="/usuarios" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+        <q-item dense to="/usuarios" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Usuarios')">
           <q-item-section avatar>
             <q-icon name="people" class="text-white"/>
           </q-item-section>
@@ -127,7 +127,7 @@
             <q-item-label class="text-white">Usuarios</q-item-label>
           </q-item-section>
         </q-item>
-        <q-item dense to="/insumos" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+        <q-item dense to="/insumos" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">
           <q-item-section avatar>
             <q-icon name="inventory_2" class="text-white"/>
           </q-item-section>
@@ -135,7 +135,7 @@
             <q-item-label class="text-white">Insumos</q-item-label>
           </q-item-section>
         </q-item>
-        <q-item dense to="/productos" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+        <q-item dense to="/productos" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Productos')">
           <q-item-section avatar>
             <q-icon name="shopping_bag" class="text-white"/>
           </q-item-section>
@@ -151,7 +151,7 @@
 <!--            <q-item-label class="text-white">Clientes</q-item-label>-->
 <!--          </q-item-section>-->
 <!--        </q-item>-->
-        <q-item dense to="/ventas" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+        <q-item dense to="/ventas" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Ventas')">
           <q-item-section avatar>
             <q-icon name="point_of_sale" class="text-white"/>
           </q-item-section>
@@ -160,7 +160,7 @@
           </q-item-section>
         </q-item>
 <!--        ventas list-->
-        <q-item dense to="/ventas/lista" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+        <q-item dense to="/ventas/lista" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Ventas')">
           <q-item-section avatar>
             <q-icon name="receipt_long" class="text-white"/>
           </q-item-section>
@@ -179,7 +179,7 @@
 <!--        component: () => import('pages/compras/InsumosResumen.vue'),-->
 <!--        meta: { requiresAuth: true }-->
 <!--        }-->
-        <q-expansion-item dense expand-separator icon="shopping_cart" label="Módulo Compras" active-class="menu-active" >
+        <q-expansion-item dense expand-separator icon="shopping_cart" label="Módulo Compras" active-class="menu-active"  v-if="canPermission('Compras')">
           <q-list>
             <q-item :inset-level="0.3" dense to="/compras/insumos" clickable class="menu-item" active-class="menu-active" v-close-popup >
               <q-item-section avatar>
@@ -217,7 +217,7 @@
 <!--            <q-item-label class="text-white">Compras de Insumos</q-item-label>-->
 <!--          </q-item-section>-->
 <!--        </q-item>-->
-        <q-item dense to="/reportes" exact clickable class="menu-item" active-class="menu-active" v-close-popup>
+        <q-item dense to="/reportes" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Reportes')">
           <q-item-section avatar>
             <q-icon name="bar_chart" class="text-white"/>
           </q-item-section>
@@ -386,6 +386,9 @@ const leftDrawerOpen = ref(false)
 
 function toggleLeftDrawer () {
   leftDrawerOpen.value = !leftDrawerOpen.value
+}
+function canPermission(permission) {
+  return proxy.$store.permissions.includes(permission)
 }
 
 function logout () {

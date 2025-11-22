@@ -144,7 +144,7 @@
         dense
         flat
         bordered
-        :rows-per-page-options="[10, 20, 0]"
+        :rows-per-page-options="[0, 20, 50, 100]"
       />
       <q-separator />
       <q-card-section class="row items-center q-gutter-sm">
@@ -174,6 +174,7 @@
 </template>
 
 <script>
+import moment from 'moment'
 export default {
   name: 'ReportesPage',
   data () {
@@ -271,6 +272,13 @@ export default {
         { name: 'nombre', label: 'Insumo', field: 'nombre', align: 'left' },
         { name: 'unidad', label: 'Unidad', field: 'unidad', align: 'left' },
         {
+          name: 'total_cant',
+          label: 'Total',
+          field: 'total_cant',
+          align: 'right',
+          format: v => Number(v || 0).toFixed(2)
+        },
+        {
           name: 'usado',
           label: 'Cant. usada',
           field: 'usado',
@@ -281,13 +289,6 @@ export default {
           name: 'stock_actual',
           label: 'Stock actual',
           field: 'stock_actual',
-          align: 'right',
-          format: v => Number(v || 0).toFixed(2)
-        },
-        {
-          name: 'total_cant',
-          label: 'Total (usado + stock)',
-          field: 'total_cant',
           align: 'right',
           format: v => Number(v || 0).toFixed(2)
         },
@@ -315,13 +316,14 @@ export default {
   },
   methods: {
     prefillDates () {
-      const today = new Date()
-      const y = today.getFullYear()
-      const m = String(today.getMonth() + 1).padStart(2, '0')
-      const first = `${y}-${m}-01`
-      const last = `${y}-${m}-${String(new Date(y, today.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
-      this.filters.date_from = first
-      this.filters.date_to = last
+      // const today = new Date()
+      // const y = today.getFullYear()
+      // const m = String(today.getMonth() + 1).padStart(2, '0')
+      // const first = `${y}-${m}-01`
+      // const last = `${y}-${m}-${String(new Date(y, today.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+      // now moment
+      this.filters.date_from = moment().format('YYYY-MM-DD')
+      this.filters.date_to = moment().format('YYYY-MM-DD')
     },
     async loadUsers () {
       try {

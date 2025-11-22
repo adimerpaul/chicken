@@ -160,7 +160,7 @@
               <q-select v-model="client.mesa" label="Mesa" outlined dense :options="['MESA','LLEVAR','DELIVERY','PEDIDOS YA']"/>
             </div>
             <div class="col-6 col-md-2">
-              <q-select v-model="client.pago" label="Pago" outlined dense :options="['EFECTIVO','TARJETA','ONLINE','QR']"/>
+              <q-select v-model="client.pago" label="Pago" outlined dense :options="['EFECTIVO','QR']"/>
             </div>
 
             <div class="col-6 col-md-2">

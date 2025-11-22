@@ -73,7 +73,9 @@
               no-caps
               class="q-mr-sm"
             />
+<!--            role gasto Administrador-->
             <q-btn
+              v-if="$store.user.role === 'Administrador'"
               color="red"
               icon="add_circle"
               @click="agregarGasto"
@@ -82,14 +84,14 @@
               class="q-mr-sm"
             />
 
-            <q-btn
-              color="blue"
-              icon="account_balance_wallet"
-              @click="agregarInicioCaja"
-              label="Inicio de Caja"
-              no-caps
-              class="q-mr-sm"
-            />
+<!--            <q-btn-->
+<!--              color="blue"-->
+<!--              icon="account_balance_wallet"-->
+<!--              @click="agregarInicioCaja"-->
+<!--              label="Inicio de Caja"-->
+<!--              no-caps-->
+<!--              class="q-mr-sm"-->
+<!--            />-->
 
             <q-btn
               flat
@@ -107,6 +109,7 @@
       </q-card-section>
     </q-card>
 
+    <template v-if="$store.user.role === 'Administrador'">
     <!-- RESUMEN -->
     <div class="row q-col-gutter-sm q-mt-sm">
       <div class="col-12 col-sm-3">
@@ -231,7 +234,7 @@
         </div>
       </div>
     </q-card>
-
+    </template>
     <!-- DETALLE -->
     <q-dialog v-model="dlg" persistent>
       <q-card style="width: 800px; max-width: 95vw">
@@ -280,13 +283,14 @@
         </q-card-section>
         <q-card-section>
           <div class="q-pa-sm">
-            <q-input
-              v-model="cierre.date"
-              type="date"
-              label="Fecha"
-              outlined dense
-              class="q-mb-sm"
-            />
+<!--            <q-input-->
+<!--              v-model="cierre.date"-->
+<!--              type="date"-->
+<!--              label="Fecha"-->
+<!--              outlined dense-->
+<!--              class="q-mb-sm"-->
+<!--              :disabled="true"-->
+<!--            />-->
             <q-input
               v-model.number="cierre.monto_efectivo"
               type="number"
@@ -355,15 +359,16 @@
 
 <script>
 import { Imprimir } from 'src/utils/ImprimirTicket'
+import moment from "moment";
 
 export default {
   name: 'VentasListado',
   data () {
-    const today = new Date().toISOString().slice(0,10)
+    // const today = new Date().toISOString().slice(0,10)
     return {
       dialogCierre: false,
       cierre: {
-        date: today,
+        date: moment().format('YYYY-MM-DD'),
         monto_efectivo: 0,
         observacion: ''
       },
@@ -379,8 +384,8 @@ export default {
       meta: { current_page: 1, last_page: 1, total: 0, from: 0, to: 0, per_page: 20 },
       pagination: { page: 1, rowsPerPage: 20, sortBy: 'date', descending: true },
       filters: {
-        date_from: today,
-        date_to: today,
+        date_from: moment().format('YYYY-MM-DD'),
+        date_to: moment().format('YYYY-MM-DD'),
         type: '',
         status: '',
         mesa: '',
@@ -402,6 +407,8 @@ export default {
         { name:'type', label:'Tipo', field:'type', align:'left' },
         { name:'status', label:'Estado', field:'status', align:'left' },
         { name:'total', label:'Total (Bs)', field:'total', align:'right', sortable:true },
+        // usuario
+        { name:'user', label:'Usuario', field: row => row.user?.name || 'N/A', align:'left' },
       ],
       detailCols: [
         { name:'name', label:'Producto', field:'name', align:'left' },
