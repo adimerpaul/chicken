@@ -2,10 +2,6 @@
 import { Printd } from 'printd'
 
 export class Imprimir {
-  /**
-   * Imprime un ticket pequeño de venta (tipo INGRESO).
-   * Recibe el objeto que retorna tu API: Venta + detalles
-   */
   static ticket (venta) {
     if (!venta) return
 
@@ -39,19 +35,14 @@ export class Imprimir {
     })
 
     const total = Number(venta.total || totalCalc || 0)
-
-    // Logo: pon tu logo en /public/chicken-logo.png o cambia la ruta
     const logoSrc = `${window.location.origin}/chicken-logo.png`
-    console.log('Logo src:', logoSrc)
 
     const html = `
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-          font-family: Arial, sans-serif;
-        }
+        body { font-family: Arial, sans-serif; }
         .ticket-wrapper {
-          width: 7.2cm; /* POS-80 aprox */
+          width: 7.2cm;
           padding: 4px 6px;
           font-size: 11px;
         }
@@ -87,7 +78,6 @@ export class Imprimir {
           border-top: 1px dashed #000;
           margin: 4px 0;
         }
-
         table.items {
           width: 100%;
           border-collapse: collapse;
@@ -106,7 +96,6 @@ export class Imprimir {
         .col-detalle { width: 44%; text-align: left; }
         .col-pu { width: 15%; text-align: right; }
         .col-total { width: 25%; text-align: right; }
-
         .total-section {
           margin-top: 6px;
           font-size: 12px;
@@ -120,7 +109,6 @@ export class Imprimir {
           margin-right: 4px;
           font-weight: bold;
         }
-
         .ticket-line {
           margin-top: 10px;
           text-align: center;
@@ -131,14 +119,12 @@ export class Imprimir {
           font-size: 18px;
           font-style: italic;
         }
-
         .box-firma {
           margin-top: 6px;
           width: 100%;
           height: 70px;
           border: 1px solid #000;
         }
-
         .pie {
           margin-top: 4px;
           text-align: center;
@@ -150,7 +136,6 @@ export class Imprimir {
           font-size: 9px;
           font-weight: bold;
         }
-
         .llamada-num {
           position: absolute;
           right: 6px;
@@ -172,31 +157,21 @@ export class Imprimir {
       ? `<div class="llamada-num">${llamada}</div>`
       : ''
     }
-
-          <!-- Logo + nombre local -->
           <div class="logo">
             <img src="${logoSrc}" alt="Chicken's Garden">
           </div>
-
           <div class="center nombre-local">CHICKEN'S GARDEN</div>
           <div class="center contacto">CONTACTOS: 77909517</div>
-          <div class="center direccion">
-            Mercado Campero - Calle 6 N° 21
-          </div>
-
+          <div class="center direccion">Mercado Campero - Calle 6 N° 21</div>
           ${type === 'INGRESO' && venta.name && venta.name !== 'SN'
       ? `<div class="cliente-nombre">${venta.name}</div>`
       : ''
     }
-
           <div class="fecha-hora">
             <span>${date}</span>
             <span>${time}</span>
           </div>
-
           <hr>
-
-          <!-- Tabla items -->
           <table class="items">
             <thead>
               <tr>
@@ -210,8 +185,6 @@ export class Imprimir {
               ${filas || '<tr><td colspan="4" style="text-align:center;">SIN DETALLE</td></tr>'}
             </tbody>
           </table>
-
-          <!-- Total y forma de pago -->
           <div class="total-section">
             <div class="total-row">
               <span>TOTAL:</span>
@@ -222,38 +195,30 @@ export class Imprimir {
               <span>${pago}</span>
             </div>
           </div>
-
           <div class="ticket-line">
             TICKET ${numero} <span class="mesa">${mesa}</span>
           </div>
-
           ${comment
       ? `<div class="pie" style="margin-top:4px;">${comment}</div>`
       : ''
     }
-
           <div class="box-firma"></div>
-
           ${type === 'INGRESO'
       ? `<div class="pie">GRACIAS POR SU COMPRA, BUEN PROVECHO</div>`
       : ''
     }
-
           <div class="usuario">
             Usuario: ${userName}
           </div>
         </div>
       </div>
     `
-
     const area = Imprimir._getArea()
     area.innerHTML = html
-
     const d = new Printd()
     d.print(area)
   }
 
-  // crea (si no existe) un div oculto para imprimir
   static _getArea () {
     let el = document.getElementById('myelement')
     if (!el) {
@@ -266,6 +231,7 @@ export class Imprimir {
     }
     return el
   }
+
   static cierreCaja (cierre) {
     if (!cierre) return
 
@@ -299,14 +265,12 @@ export class Imprimir {
         margin: 0 auto 2px auto;
       }
       hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
-
       .titulo {
         font-size: 14px;
         font-weight: bold;
         text-align: center;
         margin-top: 4px;
       }
-
       .resumen-row {
         display: flex;
         justify-content: space-between;
@@ -331,12 +295,10 @@ export class Imprimir {
       <div class="logo">
         <img src="${logoSrc}" alt="Chicken's Garden">
       </div>
-
       <div class="titulo">CIERRE DE CAJA</div>
       <div class="center">Fecha: ${date}</div>
       <div class="center">Usuario: ${userName}</div>
       <hr>
-
       <div class="resumen-row"><span>Ingresos:</span><span>${totalIngresos.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Egresos:</span><span>${totalEgresos.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Caja inicial:</span><span>${totalCajaIni.toFixed(2)} Bs</span></div>
@@ -345,28 +307,22 @@ export class Imprimir {
       <div class="resumen-row"><span>Sistema:</span><span>${montoSistema.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Efectivo contado:</span><span>${montoEfectivo.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Diferencia:</span><span>${diferencia.toFixed(2)} Bs</span></div>
-
-      ${obs
-      ? `<div class="pie" style="margin-top:4px;">Obs: ${obs}</div>`
-      : ''
-    }
-
+      ${obs ? `<div class="pie" style="margin-top:4px;">Obs: ${obs}</div>` : ''}
       <hr>
       <div class="pie">Gracias por su trabajo</div>
       <div class="usuario">Firmado: ____________________</div>
     </div>
   `
-
     const area = Imprimir._getArea()
     area.innerHTML = html
     const d = new Printd()
     d.print(area)
   }
+
   static reporteUsuarios (data) {
     const usuarios = data?.usuarios || []
     const dateFrom = data?.date_from || ''
     const dateTo = data?.date_to || ''
-
     const logoSrc = `${window.location.origin}/chicken-logo.png`
 
     let filas = ''
@@ -380,7 +336,7 @@ export class Imprimir {
         <td>${u.user_name}</td>
         <td class="num">${Number(u.total_ingresos || 0).toFixed(2)}</td>
         <td class="num">${Number(u.total_egresos || 0).toFixed(2)}</td>
-        <td class="num">${Number(u.total_caja || 0).toFixed(2)}</td>
+        <!--td class="num">${Number(u.total_caja || 0).toFixed(2)}</td!-->
         <td class="num">${neto.toFixed(2)}</td>
         <td class="num">${Number(u.tickets || 0)}</td>
       </tr>
@@ -422,7 +378,7 @@ export class Imprimir {
             <th>Usuario</th>
             <th>Ingreso</th>
             <th>Egreso</th>
-            <th>Caja</th>
+            <!--th>Caja</th!-->
             <th>Neto</th>
             <th>Tickets</th>
           </tr>
@@ -434,12 +390,12 @@ export class Imprimir {
       <div class="pie">Total neto: ${totalNeto.toFixed(2)} Bs</div>
     </div>
   `
-
     const area = Imprimir._getArea()
     area.innerHTML = html
     const d = new Printd()
     d.print(area)
   }
+
   static reporteProductosPorUsuario (data) {
     const productos = data?.productos || []
     const logoSrc = `${window.location.origin}/chicken-logo.png`
@@ -511,13 +467,95 @@ export class Imprimir {
       ${htmlBody || '<div class="center">Sin datos</div>'}
     </div>
   `
-
     const area = Imprimir._getArea()
     area.innerHTML = html
     const d = new Printd()
     d.print(area)
   }
 
+  // NUEVO: VENTAS DETALLADAS POR USUARIO (usa data.ventas de resumenPorUsuario)
+  static reporteVentasPorUsuario (data) {
+    const ventas = data?.ventas || []
+    const usuario = (data?.usuarios && data.usuarios[0]) || null
+    const logoSrc = `${window.location.origin}/chicken-logo.png`
+    const dateFrom = data?.date_from || ''
+    const dateTo = data?.date_to || ''
 
+    let filas = ''
+    let total = 0
 
+    ventas.forEach(v => {
+      const t = Number(v.total || 0)
+      total += t
+      filas += `
+        <tr>
+          <td>${v.numero}</td>
+          <td>${v.date}</td>
+          <td>${String(v.time || '').substring(0, 8)}</td>
+          <td>${v.mesa}</td>
+          <td>${v.pago}</td>
+          <td class="num">${t.toFixed(2)}</td>
+        </tr>
+      `
+    })
+
+    const html = `
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; }
+      .ticket-wrapper {
+        width: 8cm;
+        padding: 4px 6px;
+        font-size: 10px;
+      }
+      .center { text-align: center; }
+      .logo img { max-width: 70px; display:block; margin:0 auto 2px auto; }
+      hr { border: none; border-top: 1px dashed #000; margin: 4px 0; }
+      table { width: 100%; border-collapse: collapse; margin-top: 3px; }
+      th, td {
+        border: 1px solid #000;
+        padding: 2px 3px;
+      }
+      th { font-size: 9px; }
+      .num { text-align: right; }
+      .titulo { font-weight:bold; margin-top:2px; }
+    </style>
+
+    <div class="ticket-wrapper">
+      <div class="logo">
+        <img src="${logoSrc}" alt="Chicken's Garden">
+      </div>
+      <div class="center titulo">VENTAS POR USUARIO</div>
+      <div class="center">
+        Usuario: ${usuario ? usuario.user_name : ''}
+      </div>
+      <div class="center">
+        Desde: ${dateFrom || '-'} Hasta: ${dateTo || '-'}
+      </div>
+      <hr>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Hora</th>
+            <th>Mesa</th>
+            <th>Pago</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas || '<tr><td colspan="6" class="center">Sin ventas</td></tr>'}
+        </tbody>
+      </table>
+      <div class="center" style="margin-top:4px;">
+        Total ventas: ${total.toFixed(2)} Bs
+      </div>
+    </div>
+  `
+    const area = Imprimir._getArea()
+    area.innerHTML = html
+    const d = new Printd()
+    d.print(area)
+  }
 }

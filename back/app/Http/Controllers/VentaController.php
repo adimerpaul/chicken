@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\InsumoProducto;
@@ -15,31 +16,34 @@ class VentaController extends Controller
     {
         $sale->status = 'ANULADO';
         $sale->save();
+
         $insumosProductos = InsumoProducto::whereIn('producto_id', function($query) use ($sale) {
             $query->select('product_id')
-                  ->from('venta_detalles')
-                  ->where('venta_id', $sale->id);
+                ->from('venta_detalles')
+                ->where('venta_id', $sale->id);
         })->get();
+
         foreach ($insumosProductos as $ip) {
             $detalle = VentaDetalle::where('venta_id', $sale->id)
-                                   ->where('product_id', $ip->producto_id)
-                                   ->first();
+                ->where('product_id', $ip->producto_id)
+                ->first();
             if ($detalle) {
                 \App\Models\Insumo::where('id', $ip->insumo_id)
                     ->increment('stock', $ip->cantidad * $detalle->qty);
             }
         }
 
-        // Si manejas stock, este es el lugar para revertir las cantidades.
-
         return response()->json(['message' => 'Venta anulada correctamente.']);
     }
-    // GET /sales (listado básico)
+
+    // GET /sales
     public function index(Request $request)
     {
-        $per = min(max((int)$request->get('per_page', 20), 5), 100);
+//        $per = min(max((int)$request->get('per_page', 10000), 5), 100);
+        $per = 10000;
+        $user_id = $request->get('user_id');
 
-        $q = \App\Models\Venta::query()
+        $q = Venta::query()
             ->when($request->filled('date'), fn($qb)      => $qb->where('date', $request->date))
             ->when($request->filled('date_from'), fn($qb) => $qb->where('date', '>=', $request->date_from))
             ->when($request->filled('date_to'), fn($qb)   => $qb->where('date', '<=', $request->date_to))
@@ -47,6 +51,7 @@ class VentaController extends Controller
             ->when($request->filled('status'), fn($qb)    => $qb->where('status', $request->status))
             ->when($request->filled('mesa'), fn($qb)      => $qb->where('mesa', $request->mesa))
             ->when($request->filled('pago'), fn($qb)      => $qb->where('pago', $request->pago))
+            ->when($user_id, fn($qb) => $qb->where('user_id', $user_id))
             ->when($request->filled('q'), function($qb) use ($request){
                 $q = $request->q;
                 $qb->where(function($w) use ($q){
@@ -57,7 +62,6 @@ class VentaController extends Controller
             })
             ->with('detalles', 'user');
 
-        // Summary del conjunto filtrado
         $forAgg  = clone $q;
         $summary = [
             'count' => (clone $forAgg)->count(),
@@ -84,8 +88,7 @@ class VentaController extends Controller
         ]);
     }
 
-
-    // POST /sales   (crear venta desde el carrito)
+    // POST /sales
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -97,12 +100,7 @@ class VentaController extends Controller
             'pago'   => ['nullable','string','max:40'],
             'llamada'=> ['nullable','integer','min:0'],
             'comment'=> ['nullable','string'],
-
             'products'   => ['nullable','array'],
-//            'products.*.id'           => ['nullable','integer'],
-//            'products.*.name'         => ['nullable','string','max:255'],
-//            'products.*.price'        => ['nullable','numeric','min:0'],
-//            'products.*.cantidadSale' => ['nullable','numeric','min:1'],
         ]);
 
         return DB::transaction(function () use ($data, $request) {
@@ -110,7 +108,6 @@ class VentaController extends Controller
             $date = $now->toDateString();
             $time = $now->toTimeString();
 
-//            si es tipo caja solo actulizar la caja
             $type = $data['type'] ?? 'INGRESO';
             if ($type === 'CAJA') {
                 $venta = Venta::where('date', $date)
@@ -138,12 +135,10 @@ class VentaController extends Controller
                 return $venta;
             }
 
-            // correlativo diario
             $numero = (int) (Venta::where('date', $date)->max('numero') ?? 0) + 1;
 
-            // total desde el carrito
             $total = 0;
-            foreach ($data['products'] as $item) {
+            foreach ($data['products'] ?? [] as $item) {
                 $total += (float)$item['price'] * (float)$item['cantidadSale'];
             }
             if ($total <= 0) {
@@ -155,8 +150,8 @@ class VentaController extends Controller
                 'time'   => $time,
                 'total'  => $total,
                 'name'   => $data['client']['name'] ?? 'SN',
-                'user_id'=> optional($request->user())->id,   // si usas Sanctum
-                'client_id' => null,                           // opcional si tienes tabla clients
+                'user_id'=> optional($request->user())->id,
+                'client_id' => null,
                 'type'   => $data['type']   ?? 'INGRESO',
                 'status' => $data['status'] ?? 'ACTIVO',
                 'mesa'   => $data['mesa']   ?? 'MESA',
@@ -167,7 +162,7 @@ class VentaController extends Controller
             ]);
 
             $detalles = [];
-            foreach ($data['products'] as $item) {
+            foreach ($data['products'] ?? [] as $item) {
                 $qty = (float)$item['cantidadSale'];
                 $price = (float)$item['price'];
                 $detalles[] = new VentaDetalle([
@@ -178,16 +173,14 @@ class VentaController extends Controller
                     'subtotal'   => $price * $qty,
                 ]);
 
-                // Si quieres manejar stock, este es el lugar para restar/sumar.
-                // Producto::where('id', $item['id'])->decrement('stock', $qty);
-                $insumosProductos = \App\Models\InsumoProducto::where('producto_id', $item['id'])->get();
+                $insumosProductos = InsumoProducto::where('producto_id', $item['id'])->get();
                 foreach ($insumosProductos as $ip) {
-                    \App\Models\Insumo::where('id', $ip->insumo_id)->decrement('stock', $ip->cantidad * $qty);
+                    \App\Models\Insumo::where('id', $ip->insumo_id)
+                        ->decrement('stock', $ip->cantidad * $qty);
                 }
             }
             $venta->detalles()->saveMany($detalles);
 
-            // respuesta completa para imprimir
             return $venta->load('detalles','user');
         });
     }
@@ -197,6 +190,8 @@ class VentaController extends Controller
     {
         return $sale->load('detalles','user');
     }
+
+    // GET /sales/report/by-user
     public function resumenPorUsuario(Request $request)
     {
         $dateFrom = $request->input('date_from');
@@ -218,7 +213,6 @@ class VentaController extends Controller
 
         $ventas = $query->get();
 
-        // Resumen de ventas por usuario
         $usuarios = $ventas->groupBy('user_id')->map(function ($rows) {
             $u = $rows->first()->user;
 
@@ -228,17 +222,16 @@ class VentaController extends Controller
             $tickets  = $rows->where('type', 'INGRESO')->count();
 
             return [
-                'user_id'   => $u->id,
-                'user_name' => $u->name,
-                'total_ingresos' => $ingresos,
-                'total_egresos'  => $egresos,
-                'total_caja'     => $cajaIni,
-                'neto'           => $ingresos + $cajaIni - $egresos,
-                'tickets'        => $tickets,
+                'user_id'       => $u->id,
+                'user_name'     => $u->name,
+                'total_ingresos'=> $ingresos,
+                'total_egresos' => $egresos,
+                'total_caja'    => $cajaIni,
+                'neto'          => $ingresos + $cajaIni - $egresos,
+                'tickets'       => $tickets,
             ];
         })->values();
 
-        // Productos por usuario
         $detalles = VentaDetalle::with('venta.user')
             ->whereHas('venta', function ($q) use ($dateFrom, $dateTo, $userId) {
                 $q->where('status', 'ACTIVO');
@@ -277,9 +270,29 @@ class VentaController extends Controller
             ];
         })->values();
 
+        // ventas detalladas solo cuando hay user_id (para reporteVentasPorUsuario)
+        $ventasDetalladas = null;
+        if ($userId) {
+            $ventasDetalladas = $ventas->map(function ($v) {
+                return [
+                    'id'      => $v->id,
+                    'numero'  => $v->numero,
+                    'date'    => $v->date,
+                    'time'    => $v->time,
+                    'mesa'    => $v->mesa,
+                    'pago'    => $v->pago,
+                    'type'    => $v->type,
+                    'status'  => $v->status,
+                    'total'   => $v->total,
+                    'user_id' => $v->user_id,
+                ];
+            })->values();
+        }
+
         return response()->json([
             'usuarios'  => $usuarios,
             'productos' => $productos,
+            'ventas'    => $ventasDetalladas,
         ]);
     }
 }

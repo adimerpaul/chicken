@@ -1,7 +1,7 @@
 <template>
   <q-page class="q-pa-md bg-grey-3">
     <!-- HEADER + FILTROS + ACCIONES RÁPIDAS -->
-    <q-card flat bordered class="q-mb-md">
+    <q-card flat bordered class="q-mb-md" v-if="$store.user.role=='Administrador'">
       <q-card-section>
         <div class="row items-center q-col-gutter-sm">
           <div class="col-12 col-md-6">
@@ -97,7 +97,7 @@
     </q-card>
 
     <!-- KPIs -->
-    <div class="row q-col-gutter-md q-mb-md">
+    <div class="row q-col-gutter-md q-mb-md" v-if="$store.user.role=='Administrador'">
       <div class="col-12 col-sm-6 col-md-3">
         <q-card flat bordered class="kpi kpi-green">
           <q-card-section>
@@ -150,7 +150,7 @@
     </div>
 
     <!-- GRÁFICOS -->
-    <div class="row q-col-gutter-md">
+    <div class="row q-col-gutter-md" v-if="$store.user.role=='Administrador'">
       <!-- Movimiento por día -->
       <div class="col-12 col-md-8">
         <q-card flat bordered>

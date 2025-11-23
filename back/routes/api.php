@@ -56,17 +56,16 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::delete('/productos/{product}/insumos/{insumoProducto}', [ProductoController::class, 'insumosDestroy']);
 
     Route::apiResource('sales', App\Http\Controllers\VentaController::class);
-//    http://localhost:8000/api/sales/3/anular
     Route::post('sales/{sale}/anular', [App\Http\Controllers\VentaController::class, 'anular']);
 
-
-    Route::get('reportes/ventas', [ReporteController::class, 'ventas']);      // KPIs, pagos, mesas, por_dia, por_usuario
-    Route::get('reportes/insumos', [ReporteController::class, 'insumos']);    // consumo y costo de insumos
+    Route::get('reportes/ventas', [ReporteController::class, 'ventas']);
+    Route::get('reportes/insumos', [ReporteController::class, 'insumos']);
 
     Route::post('cierres-caja', [CierreCajaController::class, 'store']);
     Route::get('cierres-caja/{cierreCaja}', [CierreCajaController::class, 'show']);
     Route::get('cierres-caja-ultimo', [CierreCajaController::class, 'ultimo']);
 
     Route::get('sales/report/by-user', [VentaController::class, 'resumenPorUsuario']);
+
 
 });
