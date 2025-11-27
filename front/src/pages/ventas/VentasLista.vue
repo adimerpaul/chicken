@@ -89,6 +89,7 @@
             />
 
             <q-btn-dropdown
+              v-if="$store.user.role === 'Administrador'"
               color="purple"
               icon="print"
               label="Reportes"
@@ -135,15 +136,15 @@
             />
 
             <!-- role gasto Administrador -->
-            <q-btn
-              v-if="$store.user.role === 'Administrador'"
-              color="red"
-              icon="add_circle"
-              @click="agregarGasto"
-              label="Agregar Gasto"
-              no-caps
-              class="q-mr-sm"
-            />
+<!--            <q-btn-->
+<!--              v-if="$store.user.role === 'Administrador'"-->
+<!--              color="red"-->
+<!--              icon="add_circle"-->
+<!--              @click="agregarGasto"-->
+<!--              label="Agregar Gasto"-->
+<!--              no-caps-->
+<!--              class="q-mr-sm"-->
+<!--            />-->
 
             <q-btn
               flat

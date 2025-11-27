@@ -219,6 +219,8 @@
 </template>
 
 <script>
+import moment from "moment";
+
 export default {
   name: 'IndexPage',
   data () {
@@ -255,13 +257,16 @@ export default {
   },
   methods: {
     prefillDates () {
-      const today = new Date()
-      const y = today.getFullYear()
-      const m = String(today.getMonth() + 1).padStart(2, '0')
-      const first = `${y}-${m}-01`
-      const last = `${y}-${m}-${String(new Date(y, today.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
-      this.filters.date_from = first
-      this.filters.date_to = last
+      // const today = new Date()
+      // const y = today.getFullYear()
+      // const m = String(today.getMonth() + 1).padStart(2, '0')
+      // const first = `${y}-${m}-01`
+      // const last = `${y}-${m}-${String(new Date(y, today.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+      // this.filters.date_from = first
+      // this.filters.date_to = last
+      // now
+      this.filters.date_from = moment().format('YYYY-MM-DD')
+      this.filters.date_to = moment().format('YYYY-MM-DD')
     },
     async fetchDashboard () {
       this.loading = true
