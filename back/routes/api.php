@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\CierreCajaController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ProductoController;
@@ -67,5 +68,10 @@ Route::middleware('auth:sanctum')->group(callback: function () {
 
     Route::get('sales/report/by-user', [VentaController::class, 'resumenPorUsuario']);
 
+    Route::get('/almacenes', [AlmacenController::class, 'index']);
+    Route::post('/almacenes', [AlmacenController::class, 'store']);
+    Route::get('/almacenes/{id}', [AlmacenController::class, 'show']);
+    Route::put('/almacenes/{id}', [AlmacenController::class, 'update']);
+    Route::delete('/almacenes/{id}', [AlmacenController::class, 'destroy']);
 
 });
