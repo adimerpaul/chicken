@@ -21,10 +21,6 @@ class CierreCaja extends Model
         'observacion',
     ];
 
-//    protected $casts = [
-//        'date' => 'date',
-//    ];
-
     public function user()
     {
         return $this->belongsTo(User::class);
