@@ -136,6 +136,34 @@
             <q-item-label class="text-white">Almacenes</q-item-label>
           </q-item-section>
         </q-item>
+<!--        {-->
+<!--        path: '/compras-almacen',-->
+<!--        component: () => import('pages/almacen/ComprasAmacen.vue')-->
+<!--        },-->
+<!--        {-->
+<!--        path: '/compras-almacen/nueva',-->
+<!--        component: () => import('pages/almacen/ComprasAlmacenForm.vue')-->
+<!--        } EN MENU-->
+        <q-expansion-item dense expand-separator icon="store" label="Módulo Almacén" active-class="menu-active" v-if="canPermission('Insumos')">
+          <q-list>
+            <q-item :inset-level="0.3" dense to="/compras-almacen/nueva" clickable class="menu-item" active-class="menu-active" v-close-popup >
+              <q-item-section avatar>
+                <q-icon name="add_shopping_cart" class="text-white"/>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-white">Nueva Compra Almacén</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item :inset-level="0.3" dense to="/compras-almacen" clickable class="menu-item" active-class="menu-active" v-close-popup >
+              <q-item-section avatar>
+                <q-icon name="shopping_bag" class="text-white"/>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-white">Gestión de Compras Almacén</q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-expansion-item>
         <q-item dense to="/insumos" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">
           <q-item-section avatar>
             <q-icon name="inventory_2" class="text-white"/>

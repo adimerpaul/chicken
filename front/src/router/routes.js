@@ -44,6 +44,14 @@ const routes = [
       {
         path: '/almacenes',
         component: () => import('pages/almacen/Almacenes.vue')
+      },
+      {
+        path: '/compras-almacen',
+        component: () => import('pages/almacen/ComprasAmacen.vue')
+      },
+      {
+        path: '/compras-almacen/nueva',
+        component: () => import('pages/almacen/ComprasAlmacenForm.vue')
       }
     ]
   },
