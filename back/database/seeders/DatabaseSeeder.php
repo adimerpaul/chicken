@@ -113,10 +113,10 @@ class DatabaseSeeder extends Seeder
                 ['nombre' => $data['nombre']],
                 $data
             );
-            Almacen::firstOrCreate(
-                ['nombre' => $data['nombre']],
-                $data
-            );
+//            Almacen::firstOrCreate(
+//                ['nombre' => $data['nombre']],
+//                $data
+//            );
         }
 
         $ord = 1;

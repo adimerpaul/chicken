@@ -190,12 +190,32 @@
           </q-card>
         </div>
         <div class="col-12 col-sm-3">
-          <q-card flat bordered>
-            <q-card-section class="q-pa-sm">
-              <div class="text-caption text-grey">Ingreso</div>
-              <div class="text-h6 text-positive text-bold">{{ ingresoTotal }} Bs</div>
-            </q-card-section>
-          </q-card>
+          <div class="col-12 col-sm-3">
+            <q-card flat bordered>
+              <q-card-section class="q-pa-sm">
+                <div class="text-caption text-grey">Ingreso</div>
+                <div class="text-h6 text-positive text-bold">{{ ingresoTotal }} Bs</div>
+
+                <!-- 🔹 Desglose por método de pago -->
+                <div class="text-caption">
+                  Efectivo: <b>{{ ingresoEfectivo }}</b> Bs
+                </div>
+                <div class="text-caption">
+                  QR: <b>{{ ingresoQr }}</b> Bs
+                </div>
+                <!-- Si quieres mostrar también tarjeta/online, descomenta: -->
+                <!--
+                <div class="text-caption">
+                  Tarjeta: <b>{{ ingresoTarjeta }}</b> Bs
+                </div>
+                <div class="text-caption">
+                  Online: <b>{{ ingresoOnline }}</b> Bs
+                </div>
+                -->
+              </q-card-section>
+            </q-card>
+          </div>
+
         </div>
         <div class="col-12 col-sm-3">
           <q-card flat bordered>
@@ -676,6 +696,67 @@ export default {
       })
       return this.money(sum)
     },
+
+    // 🔹 NUEVO: ingreso solo EFECTIVO
+    ingresoEfectivo () {
+      let sum = 0
+      this.rows.forEach(item => {
+        if (
+          item.type === 'INGRESO' &&
+          item.status === 'ACTIVO' &&
+          item.pago === 'EFECTIVO'
+        ) {
+          sum += Number(item.total || 0)
+        }
+      })
+      return this.money(sum)
+    },
+
+    // 🔹 NUEVO: ingreso solo QR
+    ingresoQr () {
+      let sum = 0
+      this.rows.forEach(item => {
+        if (
+          item.type === 'INGRESO' &&
+          item.status === 'ACTIVO' &&
+          item.pago === 'QR'
+        ) {
+          sum += Number(item.total || 0)
+        }
+      })
+      return this.money(sum)
+    },
+
+    // (opcional) TARJETA
+    ingresoTarjeta () {
+      let sum = 0
+      this.rows.forEach(item => {
+        if (
+          item.type === 'INGRESO' &&
+          item.status === 'ACTIVO' &&
+          item.pago === 'TARJETA'
+        ) {
+          sum += Number(item.total || 0)
+        }
+      })
+      return this.money(sum)
+    },
+
+    // (opcional) ONLINE
+    ingresoOnline () {
+      let sum = 0
+      this.rows.forEach(item => {
+        if (
+          item.type === 'INGRESO' &&
+          item.status === 'ACTIVO' &&
+          item.pago === 'ONLINE'
+        ) {
+          sum += Number(item.total || 0)
+        }
+      })
+      return this.money(sum)
+    },
+
     countIngreso () {
       let count = 0
       ;(this.rows || []).forEach(item => {
