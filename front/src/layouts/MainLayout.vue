@@ -127,6 +127,15 @@
             <q-item-label class="text-white">Usuarios</q-item-label>
           </q-item-section>
         </q-item>
+<!--        almacenes-->
+        <q-item dense to="/almacenes" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">
+          <q-item-section avatar>
+            <q-icon name="warehouse" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Almacenes</q-item-label>
+          </q-item-section>
+        </q-item>
         <q-item dense to="/insumos" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">
           <q-item-section avatar>
             <q-icon name="inventory_2" class="text-white"/>

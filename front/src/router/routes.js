@@ -40,6 +40,10 @@ const routes = [
         path: '/reportes',
         component: () => import('pages/reportes/Reportes.vue'),
         meta: { requiresAuth: true }
+      },
+      {
+        path: '/almacenes',
+        component: () => import('pages/almacen/Almacenes.vue')
       }
     ]
   },
