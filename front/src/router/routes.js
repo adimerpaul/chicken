@@ -52,6 +52,14 @@ const routes = [
       {
         path: '/compras-almacen/nueva',
         component: () => import('pages/almacen/ComprasAlmacenForm.vue')
+      },
+      {
+        path: '/movimientos-almacen-insumos',
+        component: () => import('pages/insumos/MovimientosAlmacenInsumosIndex.vue')
+      },
+      {
+        path: '/movimientos-almacen-insumos/nuevo',
+        component: () => import('pages/insumos/MovimientosAlmacenInsumosForm.vue')
       }
     ]
   },

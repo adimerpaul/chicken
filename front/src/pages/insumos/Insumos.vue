@@ -11,7 +11,38 @@
       title="Insumos"
       :filter="filter"
     >
+<!--      <template v-slot:top-right>-->
+<!--        <q-btn-->
+<!--          color="positive"-->
+<!--          label="Nuevo"-->
+<!--          @click="onNew"-->
+<!--          no-caps-->
+<!--          icon="add_circle_outline"-->
+<!--          :loading="loading"-->
+<!--          class="q-mr-sm"-->
+<!--        />-->
+<!--        <q-btn-->
+<!--          color="primary"-->
+<!--          label="Actualizar"-->
+<!--          @click="fetchRows"-->
+<!--          no-caps-->
+<!--          icon="refresh"-->
+<!--          :loading="loading"-->
+<!--        />-->
+<!--        <q-input v-model="filter" label="Buscar" dense outlined class="q-ml-sm">-->
+<!--          <template v-slot:append><q-icon name="search"/></template>-->
+<!--        </q-input>-->
+<!--      </template>-->
       <template v-slot:top-right>
+        <q-btn
+          color="secondary"
+          label="Desde almacén"
+          @click="$router.push('/movimientos-almacen-insumos/nuevo')"
+          no-caps
+          icon="inventory_2"
+          :loading="loading"
+          class="q-mr-sm"
+        />
         <q-btn
           color="positive"
           label="Nuevo"
@@ -33,6 +64,7 @@
           <template v-slot:append><q-icon name="search"/></template>
         </q-input>
       </template>
+
 
       <template v-slot:body-cell-actions="props">
         <q-td :props="props">

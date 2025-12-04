@@ -128,6 +128,26 @@
           </q-item-section>
         </q-item>
 <!--        almacenes-->
+        <q-item dense to="/insumos" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">
+          <q-item-section avatar>
+            <q-icon name="inventory_2" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Insumos</q-item-label>
+          </q-item-section>
+        </q-item>
+<!--        {-->
+<!--        path: '/movimientos-almacen-insumos',-->
+<!--        component: () => import('pages/insumos/MovimientosAlmacenInsumosIndex.vue')-->
+<!--        },-->
+        <q-item dense to="/movimientos-almacen-insumos" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">
+          <q-item-section avatar>
+            <q-icon name="swap_horiz" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Movimientos de Insumos</q-item-label>
+          </q-item-section>
+        </q-item>
         <q-item dense to="/almacenes" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">
           <q-item-section avatar>
             <q-icon name="warehouse" class="text-white"/>
@@ -164,14 +184,6 @@
             </q-item>
           </q-list>
         </q-expansion-item>
-        <q-item dense to="/insumos" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">
-          <q-item-section avatar>
-            <q-icon name="inventory_2" class="text-white"/>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-white">Insumos</q-item-label>
-          </q-item-section>
-        </q-item>
         <q-item dense to="/productos" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Productos')">
           <q-item-section avatar>
             <q-icon name="shopping_bag" class="text-white"/>
@@ -216,26 +228,26 @@
 <!--        component: () => import('pages/compras/InsumosResumen.vue'),-->
 <!--        meta: { requiresAuth: true }-->
 <!--        }-->
-        <q-expansion-item dense expand-separator icon="shopping_cart" label="Módulo Compras" active-class="menu-active"  v-if="canPermission('Compras')">
-          <q-list>
-            <q-item :inset-level="0.3" dense to="/compras/insumos" clickable class="menu-item" active-class="menu-active" v-close-popup >
-              <q-item-section avatar>
-                <q-icon name="add_shopping_cart" class="text-white"/>
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-white">Compras de Insumos</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item :inset-level="0.3" dense to="/compras" clickable class="menu-item" active-class="menu-active" v-close-popup >
-              <q-item-section avatar>
-                <q-icon name="shopping_cart" class="text-white"/>
-              </q-item-section>
-              <q-item-section>
-                <q-item-label class="text-white">Gestión de Compras</q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
-        </q-expansion-item>
+<!--        <q-expansion-item dense expand-separator icon="shopping_cart" label="Módulo Compras" active-class="menu-active"  v-if="canPermission('Compras')">-->
+<!--          <q-list>-->
+<!--            <q-item :inset-level="0.3" dense to="/compras/insumos" clickable class="menu-item" active-class="menu-active" v-close-popup >-->
+<!--              <q-item-section avatar>-->
+<!--                <q-icon name="add_shopping_cart" class="text-white"/>-->
+<!--              </q-item-section>-->
+<!--              <q-item-section>-->
+<!--                <q-item-label class="text-white">Compras de Insumos</q-item-label>-->
+<!--              </q-item-section>-->
+<!--            </q-item>-->
+<!--            <q-item :inset-level="0.3" dense to="/compras" clickable class="menu-item" active-class="menu-active" v-close-popup >-->
+<!--              <q-item-section avatar>-->
+<!--                <q-icon name="shopping_cart" class="text-white"/>-->
+<!--              </q-item-section>-->
+<!--              <q-item-section>-->
+<!--                <q-item-label class="text-white">Gestión de Compras</q-item-label>-->
+<!--              </q-item-section>-->
+<!--            </q-item>-->
+<!--          </q-list>-->
+<!--        </q-expansion-item>-->
 <!--&lt;!&ndash;        compras&ndash;&gt;-->
 <!--        <q-item dense to="/compras" exact clickable class="menu-item" active-class="menu-active" v-close-popup>-->
 <!--          <q-item-section avatar>-->
