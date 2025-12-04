@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('almacen_compras', function (Blueprint $table) {
             $table->id();
+            $table->date('fecha');
+            $table->string('proveedor')->nullable();
+            $table->text('nota')->nullable();
+            $table->decimal('total', 14, 2)->default(0);
+            $table->string('estado')->default('ACTIVO'); // ACTIVO / ANULADO
+            $table->softDeletes();
             $table->timestamps();
         });
     }

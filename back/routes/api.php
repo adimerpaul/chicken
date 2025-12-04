@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AlmacenCompraController;
 use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\CierreCajaController;
 use App\Http\Controllers\CompraController;
@@ -74,4 +75,9 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::put('/almacenes/{id}', [AlmacenController::class, 'update']);
     Route::delete('/almacenes/{id}', [AlmacenController::class, 'destroy']);
 
+    Route::apiResource('compras-almacen', AlmacenCompraController::class);
+
+    Route::put('compras-almacen/{compra}/anular', [AlmacenCompraController::class, 'anular']);
+    Route::post('compras-almacen/report', [AlmacenCompraController::class, 'report']);
 });
+Route::get('compras-almacen/{compra}/pdf', [AlmacenCompraController::class, 'pdf']);
