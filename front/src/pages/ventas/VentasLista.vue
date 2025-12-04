@@ -59,6 +59,7 @@
               v-model="filters.user_id"
               dense
               outlined
+              clearable
               label="Usuario"
               :options="users"
               option-value="id"
@@ -422,42 +423,74 @@
     </q-dialog>
 
     <!-- DIALOG: INICIO DE CAJA -->
-    <q-dialog v-model="dialogCaja" persistent>
-      <q-card style="width: 400px; max-width: 95vw">
+    <!-- DIALOG: CIERRE DE CAJA -->
+    <q-dialog v-model="dialogCierre" persistent>
+      <q-card style="width: 420px; max-width: 95vw">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-subtitle1">
-            Inicio de Caja
+            Cierre de Caja
           </div>
           <q-space />
-          <q-btn flat round dense icon="close" @click="dialogCaja = false" />
+          <q-btn flat round dense icon="close" @click="dialogCierre = false" />
         </q-card-section>
         <q-card-section>
           <div class="q-pa-sm">
+
+            <!-- FECHA DEL CIERRE -->
             <q-input
-              v-model="caja.name"
-              label="Descripción"
+              v-model="cierre.date"
+              type="date"
+              label="Fecha"
               outlined
               dense
               class="q-mb-sm"
             />
+
+            <!-- USUARIO AL QUE SE LE CIERRA CAJA -->
+            <q-select
+              v-model="cierre.user_id"
+              :options="users"
+              option-value="id"
+              option-label="name"
+              emit-value
+              map-options
+              dense
+              outlined
+              label="Usuario (vendedor)"
+              class="q-mb-sm"
+            />
+
+            <!-- EFECTIVO CONTADO -->
             <q-input
-              v-model.number="caja.total"
-              label="Monto inicial (Bs)"
+              v-model.number="cierre.monto_efectivo"
               type="number"
+              label="Efectivo contado (Bs)"
               outlined
               dense
               class="q-mb-sm"
             />
+
+            <!-- OBSERVACIÓN -->
+            <q-input
+              v-model="cierre.observacion"
+              type="textarea"
+              label="Observación"
+              outlined
+              dense
+              class="q-mb-sm"
+            />
+
             <q-btn
-              label="Guardar"
+              label="Guardar y imprimir"
               color="primary"
-              @click="guardarInicioCaja"
+              @click="guardarCierreCaja"
               :loading="loading"
             />
           </div>
         </q-card-section>
       </q-card>
     </q-dialog>
+
 
     <!-- DIALOG: REPORTE POR USUARIO SELECCIONADO -->
     <q-dialog v-model="dialogReporteUsuario" persistent>
@@ -541,6 +574,7 @@ export default {
       dialogCierre: false,
       cierre: {
         date: moment().format('YYYY-MM-DD'),
+        user_id: null,        // 👈 usuario al que se le cierra caja
         monto_efectivo: 0,
         observacion: ''
       },
@@ -733,16 +767,21 @@ export default {
     },
 
     async guardarCierreCaja () {
+      if (!this.cierre.user_id) {
+        this.$q.notify?.({ type: 'negative', message: 'Seleccione el usuario al que se le cierra caja' })
+        return
+      }
       if (!this.cierre.monto_efectivo) {
         this.$q.notify?.({ type: 'negative', message: 'Ingrese el efectivo contado' })
         return
       }
+
       this.loading = true
       try {
         const { data } = await this.$axios.post('cierres-caja', this.cierre)
         this.$q.notify?.({ type: 'positive', message: 'Cierre de caja registrado' })
         this.dialogCierre = false
-        Imprimir.cierreCaja(data)
+        Imprimir.cierreCaja(data)   // data = cierre con user incluido
       } catch (e) {
         this.$q.notify?.({
           type: 'negative',
@@ -783,7 +822,11 @@ export default {
 
     async printUltimoCierre () {
       try {
-        const { data } = await this.$axios.get('cierres-caja-ultimo')
+        const params = {}
+        if (this.filters.user_id) {
+          params.user_id = this.filters.user_id
+        }
+        const { data } = await this.$axios.get('cierres-caja-ultimo', { params })
         Imprimir.cierreCaja(data)
       } catch (e) {
         this.$q.notify?.({
@@ -792,6 +835,7 @@ export default {
         })
       }
     },
+
 
     agregarInicioCaja () {
       this.caja = {

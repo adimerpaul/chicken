@@ -237,14 +237,21 @@ export class Imprimir {
 
     const date = cierre.date || ''
     const userName = cierre.user?.name || ''
-    const totalIngresos = Number(cierre.total_ingresos || 0)
-    const totalEgresos = Number(cierre.total_egresos || 0)
-    const totalCajaIni = Number(cierre.total_caja_inicial || 0)
-    const tickets = Number(cierre.tickets || 0)
-    const montoSistema = Number(cierre.monto_sistema || 0)
-    const montoEfectivo = Number(cierre.monto_efectivo || 0)
-    const diferencia = Number(cierre.diferencia || 0)
-    const obs = cierre.observacion || ''
+
+    const totalIngresos     = Number(cierre.total_ingresos || 0) // EFECTIVO usado para caja
+    const totalEgresos      = Number(cierre.total_egresos || 0)
+    const totalCajaIni      = Number(cierre.total_caja_inicial || 0)
+    const tickets           = Number(cierre.tickets || 0)
+    const montoSistema      = Number(cierre.monto_sistema || 0)
+    const montoEfectivo     = Number(cierre.monto_efectivo || 0)
+    const diferencia        = Number(cierre.diferencia || 0)
+    const obs               = cierre.observacion || ''
+
+    // Desglose por método de pago (pueden venir undefined si es cierre antiguo)
+    const ingresosEfectivo  = Number(cierre.ingresos_efectivo ?? totalIngresos)
+    const ingresosQr        = Number(cierre.ingresos_qr || 0)
+    const ingresosTarjeta   = Number(cierre.ingresos_tarjeta || 0)
+    const ingresosOnline    = Number(cierre.ingresos_online || 0)
 
     const logoSrc = `${window.location.origin}/chicken-logo.png`
 
@@ -299,12 +306,21 @@ export class Imprimir {
       <div class="center">Fecha: ${date}</div>
       <div class="center">Usuario: ${userName}</div>
       <hr>
-      <div class="resumen-row"><span>Ingresos:</span><span>${totalIngresos.toFixed(2)} Bs</span></div>
-      <div class="resumen-row"><span>Egresos:</span><span>${totalEgresos.toFixed(2)} Bs</span></div>
+
+      <!-- RESUMEN POR MÉTODO DE PAGO -->
+      <div class="resumen-row"><span>Ing. EFECTIVO:</span><span>${ingresosEfectivo.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Ing. QR:</span><span>${ingresosQr.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Ing. TARJETA:</span><span>${ingresosTarjeta.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Ing. ONLINE:</span><span>${ingresosOnline.toFixed(2)} Bs</span></div>
+      <hr>
+
+      <!-- RESUMEN PARA CUADRE DE CAJA (SOLO EFECTIVO) -->
       <div class="resumen-row"><span>Caja inicial:</span><span>${totalCajaIni.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Ingresos caja (efectivo):</span><span>${totalIngresos.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Egresos:</span><span>${totalEgresos.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Tickets:</span><span>${tickets}</span></div>
       <hr>
-      <div class="resumen-row"><span>Sistema:</span><span>${montoSistema.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Sistema (solo efectivo):</span><span>${montoSistema.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Efectivo contado:</span><span>${montoEfectivo.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Diferencia:</span><span>${diferencia.toFixed(2)} Bs</span></div>
       ${obs ? `<div class="pie" style="margin-top:4px;">Obs: ${obs}</div>` : ''}
