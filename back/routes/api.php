@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AlmacenCompraController;
 use App\Http\Controllers\AlmacenController;
+use App\Http\Controllers\AlmacenInsumoMovimientoController;
 use App\Http\Controllers\CierreCajaController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ProductoController;
@@ -79,5 +80,11 @@ Route::middleware('auth:sanctum')->group(callback: function () {
 
     Route::put('compras-almacen/{compra}/anular', [AlmacenCompraController::class, 'anular']);
     Route::post('compras-almacen/report', [AlmacenCompraController::class, 'report']);
+
+    Route::get('movimientos-almacen-insumos', [AlmacenInsumoMovimientoController::class, 'index']);
+    Route::post('movimientos-almacen-insumos', [AlmacenInsumoMovimientoController::class, 'store']);
+    Route::get('movimientos-almacen-insumos/{movimiento}', [AlmacenInsumoMovimientoController::class, 'show']);
+    Route::put('movimientos-almacen-insumos/{movimiento}/anular', [AlmacenInsumoMovimientoController::class, 'anular']);
+    Route::post('movimientos-almacen-insumos/report', [AlmacenInsumoMovimientoController::class, 'report']);
 });
 Route::get('compras-almacen/{compra}/pdf', [AlmacenCompraController::class, 'pdf']);
