@@ -274,6 +274,19 @@
             <q-item-label class="text-white">Reportes</q-item-label>
           </q-item-section>
         </q-item>
+<!--        {-->
+<!--        path: '/ventas-resumen',-->
+<!--        component: () => import('pages/reportes/VentasResumen.vue'),-->
+<!--        meta: { requiresAuth: true }-->
+<!--        },-->
+        <q-item dense to="/ventas-resumen" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Reportes')">
+          <q-item-section avatar>
+            <q-icon name="summarize" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Resumen de Ventas</q-item-label>
+          </q-item-section>
+        </q-item>
 
 <!--        <q-expansion-item dense expand-separator icon="gavel" label="Modulo Producción Primaria" active-class="menu-active" >-->
 <!--          <q-list>-->

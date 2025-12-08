@@ -58,6 +58,11 @@ const routes = [
         component: () => import('pages/insumos/MovimientosAlmacenInsumosIndex.vue')
       },
       {
+        path: '/ventas-resumen',
+        component: () => import('pages/reportes/VentasResumen.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
         path: '/movimientos-almacen-insumos/nuevo',
         component: () => import('pages/insumos/MovimientosAlmacenInsumosForm.vue')
       }
