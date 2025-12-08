@@ -4,6 +4,13 @@
       <q-btn flat round dense icon="menu" class="lt-md"/>
       <div class="text-h6 text-weight-bold">Productos</div>
       <q-space/>
+<!--      btn actulizar-->
+      <q-btn
+        flat round dense icon="refresh"
+        @click="fetchProducts"
+        :title="'Actualizar lista de productos'"
+        class="q-mr-sm"
+      />
       <q-btn
         color="positive" icon="add_circle" label="Nuevo" no-caps
         @click="openNew"
@@ -53,9 +60,16 @@
             </div>
 
             <div class="absolute-bottom-right q-ma-sm bg-red text-white"
-                 style="padding:4px 10px;border-radius:999px;font-weight:700;">
-              {{ toMoney(p.price) }} Bs
+                 style="padding:4px 10px;border-radius:12px; font-weight:700; min-width:120px;">
+              <div class="text-right">
+                <div class="text-caption">Venta</div>
+                <div class="text-subtitle2">{{ toMoney(p.price) }} Bs</div>
+                <div class="text-caption">
+                  Costo: {{ toMoney(p.costo_insumos || 0) }} Bs
+                </div>
+              </div>
             </div>
+
 
             <div class="absolute-bottom bg-gradient text-white q-pa-sm">
               <div class="text-subtitle2 text-weight-bold ellipsis-2-lines">{{ p.name }}</div>
@@ -75,7 +89,23 @@
                 @click.stop="openInsumos(p)"
                 :title="'Insumos del producto'"
               />
-<!--              <q-btn dense round flat icon="add_shopping_cart" @click.stop="emitAdd(p)"/>-->
+            </div>
+
+            <!-- 🔹 NUEVO: COSTO Y UTILIDAD -->
+            <div class="row items-center q-mt-xs">
+              <div>
+                <div class="text-caption text-grey-7">Costo aprox.</div>
+                <div class="text-caption">
+                  {{ toMoney(p.costo_insumos || 0) }} Bs
+                </div>
+              </div>
+              <q-space/>
+              <div class="text-right">
+                <div class="text-caption text-grey-7">Utilidad aprox.</div>
+                <div class="text-caption text-positive">
+                  {{ toMoney((p.price || 0) - (p.costo_insumos || 0)) }} Bs
+                </div>
+              </div>
             </div>
           </q-card-section>
         </q-card>
@@ -388,7 +418,12 @@ export default {
         }
       })
     },
-    toMoney (v) { return Number(v || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+    toMoney (v) {
+      return Number(v || 0).toLocaleString('es-BO', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+    },
     selectCategory (id) { this.categoryId = id; this.fetchProducts() },
 
     async fetchProducts () {

@@ -235,16 +235,17 @@ export class Imprimir {
   static cierreCaja (cierre) {
     if (!cierre) return
 
-    const date = cierre.date || ''
+    const date     = cierre.date || ''
     const userName = cierre.user?.name || ''
 
-    const totalIngresos     = Number(cierre.total_ingresos || 0) // EFECTIVO usado para caja
+    const totalIngresos     = Number(cierre.total_ingresos || 0)
     const totalEgresos      = Number(cierre.total_egresos || 0)
     const totalCajaIni      = Number(cierre.total_caja_inicial || 0)
     const tickets           = Number(cierre.tickets || 0)
-    const montoSistema      = Number(cierre.monto_sistema || 0)
-    const montoEfectivo     = Number(cierre.monto_efectivo || 0)
-    const diferencia        = Number(cierre.diferencia || 0)
+    const montoSistema      = Number(cierre.monto_sistema || 0)      // SISTEMA (solo EFECTIVO)
+    const montoEfectivo     = Number(cierre.monto_efectivo || 0)     // contado EFECTIVO
+    const montoQr           = Number(cierre.monto_qr || 0)           // contado QR
+    const diferencia        = Number(cierre.diferencia || 0)         // diferencia TOTAL
     const obs               = cierre.observacion || ''
 
     // Desglose por método de pago (pueden venir undefined si es cierre antiguo)
@@ -252,6 +253,15 @@ export class Imprimir {
     const ingresosQr        = Number(cierre.ingresos_qr || 0)
     const ingresosTarjeta   = Number(cierre.ingresos_tarjeta || 0)
     const ingresosOnline    = Number(cierre.ingresos_online || 0)
+
+    // Totales esperados / contados
+    const esperadoTotal = Number(cierre.esperado_total ?? (montoSistema + ingresosQr))
+    const contadoTotal  = Number(cierre.contado_total ?? (montoEfectivo + montoQr))
+
+    // Diferencias por tipo y total
+    const diferenciaEf  = montoEfectivo - montoSistema
+    const diferenciaQr  = montoQr - ingresosQr
+    const diferenciaTot = diferencia || (contadoTotal - esperadoTotal)
 
     const logoSrc = `${window.location.origin}/chicken-logo.png`
 
@@ -304,25 +314,38 @@ export class Imprimir {
       </div>
       <div class="titulo">CIERRE DE CAJA</div>
       <div class="center">Fecha: ${date}</div>
-      <div class="center">Usuario: ${userName}</div>
+      <div class="center">Usuario cierre: ${userName}</div>
       <hr>
 
-      <!-- RESUMEN POR MÉTODO DE PAGO -->
+      <!-- RESUMEN POR MÉTODO DE PAGO (SISTEMA) -->
       <div class="resumen-row"><span>Ing. EFECTIVO:</span><span>${ingresosEfectivo.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Ing. QR:</span><span>${ingresosQr.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Ing. TARJETA:</span><span>${ingresosTarjeta.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Ing. ONLINE:</span><span>${ingresosOnline.toFixed(2)} Bs</span></div>
       <hr>
 
-      <!-- RESUMEN PARA CUADRE DE CAJA (SOLO EFECTIVO) -->
+      <!-- RESUMEN SISTEMA SOLO EFECTIVO -->
       <div class="resumen-row"><span>Caja inicial:</span><span>${totalCajaIni.toFixed(2)} Bs</span></div>
-      <div class="resumen-row"><span>Ingresos caja (efectivo):</span><span>${totalIngresos.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Ingresos caja (efectivo):</span><span>${ingresosEfectivo.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Egresos:</span><span>${totalEgresos.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Tickets:</span><span>${tickets}</span></div>
       <hr>
-      <div class="resumen-row"><span>Sistema (solo efectivo):</span><span>${montoSistema.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Sistema (efectivo):</span><span>${montoSistema.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Efectivo contado:</span><span>${montoEfectivo.toFixed(2)} Bs</span></div>
-      <div class="resumen-row"><span>Diferencia:</span><span>${diferencia.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Dif. efectivo:</span><span>${diferenciaEf.toFixed(2)} Bs</span></div>
+      <hr>
+
+      <!-- QR -->
+      <div class="resumen-row"><span>QR esperado:</span><span>${ingresosQr.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>QR contado:</span><span>${montoQr.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Dif. QR:</span><span>${diferenciaQr.toFixed(2)} Bs</span></div>
+      <hr>
+
+      <!-- TOTALES -->
+      <div class="resumen-row"><span>Total esperado:</span><span>${esperadoTotal.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Total contado:</span><span>${contadoTotal.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Diferencia total:</span><span>${diferenciaTot.toFixed(2)} Bs</span></div>
+
       ${obs ? `<div class="pie" style="margin-top:4px;">Obs: ${obs}</div>` : ''}
       <hr>
       <div class="pie">Gracias por su trabajo</div>
@@ -334,6 +357,7 @@ export class Imprimir {
     const d = new Printd()
     d.print(area)
   }
+
 
   static reporteUsuarios (data) {
     const usuarios = data?.usuarios || []

@@ -43,17 +43,7 @@
               map-options
             />
           </div>
-<!--          <div class="col-12 col-sm-2">-->
-<!--            <q-select-->
-<!--              v-model="filters.pago"-->
-<!--              dense-->
-<!--              outlined-->
-<!--              label="Pago"-->
-<!--              :options="['', 'EFECTIVO', 'TARJETA', 'ONLINE', 'QR']"-->
-<!--              emit-value-->
-<!--              map-options-->
-<!--            />-->
-<!--          </div>-->
+
           <div class="col-12 col-sm-2">
             <q-select
               v-model="filters.user_id"
@@ -136,17 +126,6 @@
               class="q-mr-sm"
             />
 
-            <!-- role gasto Administrador -->
-<!--            <q-btn-->
-<!--              v-if="$store.user.role === 'Administrador'"-->
-<!--              color="red"-->
-<!--              icon="add_circle"-->
-<!--              @click="agregarGasto"-->
-<!--              label="Agregar Gasto"-->
-<!--              no-caps-->
-<!--              class="q-mr-sm"-->
-<!--            />-->
-
             <q-btn
               flat
               color="primary"
@@ -190,32 +169,18 @@
           </q-card>
         </div>
         <div class="col-12 col-sm-3">
-          <div class="col-12 col-sm-3">
-            <q-card flat bordered>
-              <q-card-section class="q-pa-sm">
-                <div class="text-caption text-grey">Ingreso</div>
-                <div class="text-h6 text-positive text-bold">{{ ingresoTotal }} Bs</div>
-
-                <!-- 🔹 Desglose por método de pago -->
-                <div class="text-caption">
-                  Efectivo: <b>{{ ingresoEfectivo }}</b> Bs
-                </div>
-                <div class="text-caption">
-                  QR: <b>{{ ingresoQr }}</b> Bs
-                </div>
-                <!-- Si quieres mostrar también tarjeta/online, descomenta: -->
-                <!--
-                <div class="text-caption">
-                  Tarjeta: <b>{{ ingresoTarjeta }}</b> Bs
-                </div>
-                <div class="text-caption">
-                  Online: <b>{{ ingresoOnline }}</b> Bs
-                </div>
-                -->
-              </q-card-section>
-            </q-card>
-          </div>
-
+          <q-card flat bordered>
+            <q-card-section class="q-pa-sm">
+              <div class="text-caption text-grey">Ingreso</div>
+              <div class="text-h6 text-positive text-bold">{{ ingresoTotal }} Bs</div>
+              <div class="text-caption">
+                Efectivo: <b>{{ ingresoEfectivo }}</b> Bs
+              </div>
+              <div class="text-caption">
+                QR: <b>{{ ingresoQr }}</b> Bs
+              </div>
+            </q-card-section>
+          </q-card>
         </div>
         <div class="col-12 col-sm-3">
           <q-card flat bordered>
@@ -370,45 +335,6 @@
       </q-card>
     </q-dialog>
 
-    <!-- DIALOG: CIERRE DE CAJA -->
-    <q-dialog v-model="dialogCierre" persistent>
-      <q-card style="width: 400px; max-width: 95vw">
-        <q-card-section class="row items-center q-pb-none">
-          <div class="text-subtitle1">
-            Cierre de Caja
-          </div>
-          <q-space />
-          <q-btn flat round dense icon="close" @click="dialogCierre = false" />
-        </q-card-section>
-        <q-card-section>
-          <div class="q-pa-sm">
-            <q-input
-              v-model.number="cierre.monto_efectivo"
-              type="number"
-              label="Efectivo contado (Bs)"
-              outlined
-              dense
-              class="q-mb-sm"
-            />
-            <q-input
-              v-model="cierre.observacion"
-              type="textarea"
-              label="Observación"
-              outlined
-              dense
-              class="q-mb-sm"
-            />
-            <q-btn
-              label="Guardar y imprimir"
-              color="primary"
-              @click="guardarCierreCaja"
-              :loading="loading"
-            />
-          </div>
-        </q-card-section>
-      </q-card>
-    </q-dialog>
-
     <!-- DIALOG: AGREGAR GASTO -->
     <q-dialog v-model="dialogGasto" persistent>
       <q-card style="width: 400px; max-width: 95vw">
@@ -442,8 +368,7 @@
       </q-card>
     </q-dialog>
 
-    <!-- DIALOG: INICIO DE CAJA -->
-    <!-- DIALOG: CIERRE DE CAJA -->
+    <!-- DIALOG: CIERRE DE CAJA (GENERAL, EFECTIVO + QR) -->
     <q-dialog v-model="dialogCierre" persistent>
       <q-card style="width: 420px; max-width: 95vw">
         <q-card-section class="row items-center q-pb-none">
@@ -453,10 +378,9 @@
           <q-space />
           <q-btn flat round dense icon="close" @click="dialogCierre = false" />
         </q-card-section>
+
         <q-card-section>
           <div class="q-pa-sm">
-
-            <!-- FECHA DEL CIERRE -->
             <q-input
               v-model="cierre.date"
               type="date"
@@ -466,21 +390,6 @@
               class="q-mb-sm"
             />
 
-            <!-- USUARIO AL QUE SE LE CIERRA CAJA -->
-            <q-select
-              v-model="cierre.user_id"
-              :options="users"
-              option-value="id"
-              option-label="name"
-              emit-value
-              map-options
-              dense
-              outlined
-              label="Usuario (vendedor)"
-              class="q-mb-sm"
-            />
-
-            <!-- EFECTIVO CONTADO -->
             <q-input
               v-model.number="cierre.monto_efectivo"
               type="number"
@@ -490,7 +399,15 @@
               class="q-mb-sm"
             />
 
-            <!-- OBSERVACIÓN -->
+            <q-input
+              v-model.number="cierre.monto_qr"
+              type="number"
+              label="Monto QR contado (Bs)"
+              outlined
+              dense
+              class="q-mb-sm"
+            />
+
             <q-input
               v-model="cierre.observacion"
               type="textarea"
@@ -510,7 +427,6 @@
         </q-card-section>
       </q-card>
     </q-dialog>
-
 
     <!-- DIALOG: REPORTE POR USUARIO SELECCIONADO -->
     <q-dialog v-model="dialogReporteUsuario" persistent>
@@ -594,8 +510,9 @@ export default {
       dialogCierre: false,
       cierre: {
         date: moment().format('YYYY-MM-DD'),
-        user_id: null,        // 👈 usuario al que se le cierra caja
+        // 👇 ya NO usamos user_id en el front
         monto_efectivo: 0,
+        monto_qr: 0,
         observacion: ''
       },
       dialogCaja: false,
@@ -616,6 +533,7 @@ export default {
         status: '',
         mesa: '',
         pago: '',
+        user_id: '',
         q: ''
       },
       summary: { total: 0, count: 0, by_type: [] },
@@ -642,7 +560,6 @@ export default {
         { name: 'subtotal', label: 'Subtotal', field: 'subtotal', align: 'right' }
       ],
 
-      // NUEVO: para reportes por usuario
       users: [],
       dialogReporteUsuario: false,
       selectedUserId: null,
@@ -664,28 +581,6 @@ export default {
         egresosActivos.reduce((a, b) => a + Number(b.total || 0), 0)
       )
     },
-    sumIngreso () {
-      let sum = 0
-      ;(this.rows || []).forEach(item => {
-        if (
-          item.type === 'INGRESO' &&
-          item.status === 'ACTIVO'
-        ) sum += Number(item.total || 0)
-      })
-      sum += (this.rows || []).reduce((acc, item) => {
-        if (item.type === 'CAJA' &&
-          item.status === 'ACTIVO'
-        ) return acc + Number(item.total || 0)
-        return acc
-      }, 0)
-      sum += (this.rows || []).reduce((acc, item) => {
-        if (item.type === 'EGRESO' &&
-          item.status === 'ACTIVO'
-        ) return acc - Number(item.total || 0)
-        return acc
-      }, 0)
-      return this.money(sum)
-    },
     ingresoTotal () {
       let sum = 0
       this.rows.forEach(item => {
@@ -696,8 +591,6 @@ export default {
       })
       return this.money(sum)
     },
-
-    // 🔹 NUEVO: ingreso solo EFECTIVO
     ingresoEfectivo () {
       let sum = 0
       this.rows.forEach(item => {
@@ -711,8 +604,6 @@ export default {
       })
       return this.money(sum)
     },
-
-    // 🔹 NUEVO: ingreso solo QR
     ingresoQr () {
       let sum = 0
       this.rows.forEach(item => {
@@ -726,37 +617,6 @@ export default {
       })
       return this.money(sum)
     },
-
-    // (opcional) TARJETA
-    ingresoTarjeta () {
-      let sum = 0
-      this.rows.forEach(item => {
-        if (
-          item.type === 'INGRESO' &&
-          item.status === 'ACTIVO' &&
-          item.pago === 'TARJETA'
-        ) {
-          sum += Number(item.total || 0)
-        }
-      })
-      return this.money(sum)
-    },
-
-    // (opcional) ONLINE
-    ingresoOnline () {
-      let sum = 0
-      this.rows.forEach(item => {
-        if (
-          item.type === 'INGRESO' &&
-          item.status === 'ACTIVO' &&
-          item.pago === 'ONLINE'
-        ) {
-          sum += Number(item.total || 0)
-        }
-      })
-      return this.money(sum)
-    },
-
     countIngreso () {
       let count = 0
       ;(this.rows || []).forEach(item => {
@@ -778,7 +638,6 @@ export default {
     }
   },
   methods: {
-    // ==== NUEVO: cargar usuarios para el combo ====
     async fetchUsers () {
       try {
         const { data } = await this.$axios.get('users')
@@ -842,18 +701,19 @@ export default {
       this.cierre = {
         date: this.filters.date_from || today,
         monto_efectivo: 0,
+        monto_qr: 0,
         observacion: ''
       }
       this.dialogCierre = true
     },
 
     async guardarCierreCaja () {
-      if (!this.cierre.user_id) {
-        this.$q.notify?.({ type: 'negative', message: 'Seleccione el usuario al que se le cierra caja' })
+      if (this.cierre.monto_efectivo === null || this.cierre.monto_efectivo === '' || isNaN(this.cierre.monto_efectivo)) {
+        this.$q.notify?.({ type: 'negative', message: 'Ingrese el efectivo contado' })
         return
       }
-      if (!this.cierre.monto_efectivo) {
-        this.$q.notify?.({ type: 'negative', message: 'Ingrese el efectivo contado' })
+      if (this.cierre.monto_qr === null || this.cierre.monto_qr === '' || isNaN(this.cierre.monto_qr)) {
+        this.$q.notify?.({ type: 'negative', message: 'Ingrese el monto QR contado (puede ser 0)' })
         return
       }
 
@@ -862,7 +722,8 @@ export default {
         const { data } = await this.$axios.post('cierres-caja', this.cierre)
         this.$q.notify?.({ type: 'positive', message: 'Cierre de caja registrado' })
         this.dialogCierre = false
-        Imprimir.cierreCaja(data)   // data = cierre con user incluido
+
+        Imprimir.cierreCaja(data)
       } catch (e) {
         this.$q.notify?.({
           type: 'negative',
@@ -903,11 +764,7 @@ export default {
 
     async printUltimoCierre () {
       try {
-        const params = {}
-        if (this.filters.user_id) {
-          params.user_id = this.filters.user_id
-        }
-        const { data } = await this.$axios.get('cierres-caja-ultimo', { params })
+        const { data } = await this.$axios.get('cierres-caja-ultimo')
         Imprimir.cierreCaja(data)
       } catch (e) {
         this.$q.notify?.({
@@ -915,43 +772,6 @@ export default {
           message: 'No se encontró un cierre de caja'
         })
       }
-    },
-
-
-    agregarInicioCaja () {
-      this.caja = {
-        name: 'Inicio de Caja',
-        total: 0
-      }
-      this.dialogCaja = true
-    },
-
-    guardarInicioCaja () {
-      if (!this.caja.total) {
-        this.$q.notify?.({ type: 'negative', message: 'Ingrese el monto inicial' })
-        return
-      }
-      this.loading = true
-      this.$axios.post('sales', {
-        name: this.caja.name || 'Inicio de Caja',
-        total: this.caja.total,
-        type: 'CAJA',
-        status: 'ACTIVO',
-        mesa: 'CAJA',
-        pago: 'EFECTIVO',
-        comment: 'Inicio de caja',
-        detalles: [],
-        products: []
-      }).then(() => {
-        this.$q.notify?.({ type: 'positive', message: 'Inicio de caja registrado' })
-        this.dialogCaja = false
-        this.caja = { name: 'Inicio de Caja', total: 0 }
-        this.fetchSales()
-      }).catch(() => {
-        this.$q.notify?.({ type: 'negative', message: 'Error al guardar inicio de caja' })
-      }).finally(() => {
-        this.loading = false
-      })
     },
 
     anularVenta (row) {
@@ -987,11 +807,6 @@ export default {
       return 'grey'
     },
 
-    byType (t) {
-      const f = (this.summary.by_type || []).find(x => x.type === t)
-      return f ? Number(f.total || 0) : 0
-    },
-
     resetFilters () {
       Object.assign(this.filters, {
         date_from: '',
@@ -1000,6 +815,7 @@ export default {
         status: '',
         mesa: '',
         pago: '',
+        user_id: '',
         q: ''
       })
       this.pagination.page = 1
@@ -1012,7 +828,7 @@ export default {
     },
 
     onRequest () {
-      // QTable emit — usamos nuestro fetch con meta/pagination del backend
+      // manejamos paginación con meta del backend
     },
 
     agregarGasto () {
@@ -1116,6 +932,7 @@ export default {
     'filters.status': 'fetchSales',
     'filters.mesa': 'fetchSales',
     'filters.pago': 'fetchSales',
+    'filters.user_id': 'fetchSales',
     'filters.q': function () {
       this.pagination.page = 1
       this.fetchSales()
