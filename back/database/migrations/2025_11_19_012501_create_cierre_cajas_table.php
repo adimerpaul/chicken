@@ -28,6 +28,8 @@ return new class extends Migration
             $table->decimal('monto_sistema', 10, 2)->default(0);
             // Diferencia = efectivo - sistema (positivo o negativo)
             $table->decimal('diferencia', 10, 2)->default(0);
+            $table->decimal('monto_qr', 10, 2)->default(0)->after('monto_efectivo');
+
 
             $table->text('observacion')->nullable();
 

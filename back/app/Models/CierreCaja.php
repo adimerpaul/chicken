@@ -16,6 +16,7 @@ class CierreCaja extends Model
         'total_caja_inicial',
         'tickets',
         'monto_efectivo',
+        'monto_qr',
         'monto_sistema',
         'diferencia',
         'observacion',

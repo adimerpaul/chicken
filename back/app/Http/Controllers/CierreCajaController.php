@@ -8,155 +8,121 @@ use Illuminate\Http\Request;
 
 class CierreCajaController extends Controller
 {
-    /**
-     * Registrar cierre de caja.
-     *  - user_id: usuario al que se le cierra caja (vendedor)
-     *  - date: fecha del cierre
-     *  - monto_efectivo: efectivo contado en caja
-     */
     public function store(Request $request)
     {
-        $auth = $request->user();
-
         $data = $request->validate([
             'date'           => ['required', 'date'],
-            'user_id'        => ['nullable', 'integer', 'exists:users,id'],
-            'monto_efectivo' => ['required', 'numeric', 'min:0'],
+            'monto_efectivo' => ['required', 'numeric'],
+            'monto_qr'       => ['required', 'numeric'],
             'observacion'    => ['nullable', 'string'],
         ]);
 
-        $date   = $data['date'];
-        $userId = $data['user_id'] ?? optional($auth)->id;
+        $date = $data['date'];
 
-        // Base: ventas activas de ese usuario en esa fecha
-        $base = Venta::where('status', 'ACTIVO')
-            ->whereDate('date', $date)
-            ->when($userId, fn ($q) => $q->where('user_id', $userId));
+        $stats = $this->buildStatsForDate($date);
 
-        // === SEPARAR POR MÉTODO DE PAGO ===
-        $ingresosEfectivo = (clone $base)
-            ->where('type', 'INGRESO')
-            ->where('pago', 'EFECTIVO')
-            ->sum('total');
+        $montoSistemaEfectivo = $stats['monto_sistema'];
+        $ingresosQr           = $stats['ingresos_qr'];
 
-        $ingresosQr = (clone $base)
-            ->where('type', 'INGRESO')
-            ->where('pago', 'QR')
-            ->sum('total');
-
-        $ingresosTarjeta = (clone $base)
-            ->where('type', 'INGRESO')
-            ->where('pago', 'TARJETA')
-            ->sum('total');
-
-        $ingresosOnline = (clone $base)
-            ->where('type', 'INGRESO')
-            ->where('pago', 'ONLINE')
-            ->sum('total');
-
-        // EGRESOS / CAJA (normal, suelen ser efectivo)
-        $totalEgresos  = (clone $base)->where('type', 'EGRESO')->sum('total');
-        $totalCajaIni  = (clone $base)->where('type', 'CAJA')->sum('total');
-        $tickets       = (clone $base)
-            ->where('type', 'INGRESO')
-            ->count();
-
-        // Para CUADRE de caja de la vendedora SOLO usamos efectivo:
-        // caja_inicial + ingresos_efectivo - egresos
-        $totalIngresos = $ingresosEfectivo;
-        $montoSistema  = $totalIngresos + $totalCajaIni - $totalEgresos;
-
-        $montoEfectivo = (float) $data['monto_efectivo'];
-        $diferencia    = $montoEfectivo - $montoSistema;
+        $esperadoTotal = $montoSistemaEfectivo + $ingresosQr;
+        $contadoTotal  = $data['monto_efectivo'] + $data['monto_qr'];
+        $diferenciaTotal = $contadoTotal - $esperadoTotal;
 
         $cierre = CierreCaja::create([
-            'user_id'            => $userId,
+            'user_id'            => optional($request->user())->id,
             'date'               => $date,
-            'total_ingresos'     => $totalIngresos,     // SOLO EFECTIVO
-            'total_egresos'      => $totalEgresos,
-            'total_caja_inicial' => $totalCajaIni,
-            'tickets'            => $tickets,
-            'monto_efectivo'     => $montoEfectivo,
-            'monto_sistema'      => $montoSistema,
-            'diferencia'         => $diferencia,
+            'total_ingresos'     => $stats['total_ingresos'],
+            'total_egresos'      => $stats['total_egresos'],
+            'total_caja_inicial' => $stats['total_caja_inicial'],
+            'tickets'            => $stats['tickets'],
+            'monto_efectivo'     => $data['monto_efectivo'],
+            'monto_qr'           => $data['monto_qr'],
+            'monto_sistema'      => $montoSistemaEfectivo,
+            'diferencia'         => $diferenciaTotal,
             'observacion'        => $data['observacion'] ?? null,
         ]);
 
-        // Campos "virtuales" para el JSON (no están en la tabla, pero aparecen en la respuesta)
-        $cierre->ingresos_efectivo = $ingresosEfectivo;
-        $cierre->ingresos_qr       = $ingresosQr;
-        $cierre->ingresos_tarjeta  = $ingresosTarjeta;
-        $cierre->ingresos_online   = $ingresosOnline;
+        $cierre->ingresos_efectivo = $stats['ingresos_efectivo'];
+        $cierre->ingresos_qr       = $stats['ingresos_qr'];
+        $cierre->ingresos_tarjeta  = $stats['ingresos_tarjeta'];
+        $cierre->ingresos_online   = $stats['ingresos_online'];
+        $cierre->esperado_total    = $esperadoTotal;
+        $cierre->contado_total     = $contadoTotal;
 
-        return $cierre->load('user');
+        return response()->json($cierre->load('user'));
     }
 
-    // Ver un cierre (para reimprimir manualmente si quieres)
     public function show(CierreCaja $cierreCaja)
     {
-        // Opcional: recalcular métodos de pago para ese cierre
-        $this->attachPaymentBreakdown($cierreCaja);
-        return $cierreCaja->load('user');
+        $stats = $this->buildStatsForDate($cierreCaja->date);
+
+        $montoSistemaEfectivo = $stats['monto_sistema'];
+        $ingresosQr           = $stats['ingresos_qr'];
+
+        $esperadoTotal = $montoSistemaEfectivo + $ingresosQr;
+        $contadoTotal  = ($cierreCaja->monto_efectivo ?? 0) + ($cierreCaja->monto_qr ?? 0);
+        $diferencia    = $contadoTotal - $esperadoTotal;
+
+        $cierreCaja->total_ingresos     = $stats['total_ingresos'];
+        $cierreCaja->total_egresos      = $stats['total_egresos'];
+        $cierreCaja->total_caja_inicial = $stats['total_caja_inicial'];
+        $cierreCaja->tickets            = $stats['tickets'];
+        $cierreCaja->monto_sistema      = $montoSistemaEfectivo;
+        $cierreCaja->diferencia         = $diferencia;
+
+        $cierreCaja->ingresos_efectivo  = $stats['ingresos_efectivo'];
+        $cierreCaja->ingresos_qr        = $stats['ingresos_qr'];
+        $cierreCaja->ingresos_tarjeta   = $stats['ingresos_tarjeta'];
+        $cierreCaja->ingresos_online    = $stats['ingresos_online'];
+        $cierreCaja->esperado_total     = $esperadoTotal;
+        $cierreCaja->contado_total      = $contadoTotal;
+
+        return response()->json($cierreCaja->load('user'));
     }
 
-    /**
-     * Último cierre.
-     * Si se envía ?user_id=XX filtra por ese usuario.
-     * Si no, por defecto usa el usuario autenticado (modo viejo).
-     */
     public function ultimo(Request $request)
     {
-        $auth   = $request->user();
-        $userId = $request->query('user_id');
-
-        if (!$userId && $auth) {
-            $userId = $auth->id;
-        }
-
         $cierre = CierreCaja::with('user')
-            ->when($userId, fn ($q) => $q->where('user_id', $userId))
             ->orderByDesc('date')
             ->orderByDesc('id')
-            ->firstOrFail();
+            ->first();
 
-        // Adjunta desglose EFECTIVO / QR / otros para la impresión
-        $this->attachPaymentBreakdown($cierre);
-
-        return $cierre;
-    }
-
-    /**
-     * Adjunta al modelo (para JSON) los totales por método de pago
-     * usando date + user_id del cierre.
-     */
-    protected function attachPaymentBreakdown(CierreCaja $cierre)
-    {
-        if (!$cierre->user_id || !$cierre->date) {
-            return;
+        if (!$cierre) {
+            return response()->json(['message' => 'No hay cierres de caja registrados'], 404);
         }
 
-        $base = Venta::where('status', 'ACTIVO')
-            ->whereDate('date', $cierre->date)
-            ->where('user_id', $cierre->user_id);
+        return $this->show($cierre);
+    }
 
-        $cierre->ingresos_efectivo = (clone $base)
-            ->where('type', 'INGRESO')
-            ->where('pago', 'EFECTIVO')
-            ->sum('total');
+    protected function buildStatsForDate(string $date): array
+    {
+        $ventas = Venta::whereDate('date', $date)
+            ->where('status', 'ACTIVO')
+            ->get();
 
-        $cierre->ingresos_qr = (clone $base)
-            ->where('type', 'INGRESO')
-            ->where('pago', 'QR')
-            ->sum('total');
+        $ingresosEfectivo = $ventas->where('type', 'INGRESO')->where('pago', 'EFECTIVO')->sum('total');
+        $ingresosQr       = $ventas->where('type', 'INGRESO')->where('pago', 'QR')->sum('total');
+        $ingresosTarjeta  = $ventas->where('type', 'INGRESO')->where('pago', 'TARJETA')->sum('total');
+        $ingresosOnline   = $ventas->where('type', 'INGRESO')->where('pago', 'ONLINE')->sum('total');
 
-        $cierre->ingresos_tarjeta = (clone $base)
-            ->where('type', 'INGRESO')
-            ->where('pago', 'TARJETA')
-            ->sum('total');
+        $totalCajaIni     = $ventas->where('type', 'CAJA')->sum('total');
+        $totalEgresos     = $ventas->where('type', 'EGRESO')->sum('total');
+        $tickets          = $ventas->where('type', 'INGRESO')->count();
 
-        $cierre->ingresos_online = (clone $base)
-            ->where('type', 'INGRESO')
-            ->where('pago', 'ONLINE')
-            ->sum('total');
+        $totalIngresos    = $ingresosEfectivo + $ingresosQr + $ingresosTarjeta + $ingresosOnline;
+
+        $montoSistema = $totalCajaIni + $ingresosEfectivo - $totalEgresos;
+
+        return [
+            'ingresos_efectivo'   => $ingresosEfectivo,
+            'ingresos_qr'         => $ingresosQr,
+            'ingresos_tarjeta'    => $ingresosTarjeta,
+            'ingresos_online'     => $ingresosOnline,
+            'total_ingresos'      => $totalIngresos,
+            'total_egresos'       => $totalEgresos,
+            'total_caja_inicial'  => $totalCajaIni,
+            'tickets'             => $tickets,
+            'monto_sistema'       => $montoSistema,
+        ];
     }
 }

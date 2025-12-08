@@ -67,9 +67,61 @@ class ProductoController extends Controller
         return response()->json(['message' => 'Insumo eliminado del producto']);
     }
     // GET /products  (lista con filtros básicos)
-    public function index(Request $req)
+    public function index(Request $request)
     {
-        return Producto::all();
+        $categoria = $request->get('categoria');
+        $search    = $request->get('q');
+
+        $query = Producto::query()
+            ->whereNull('productos.deleted_at');
+
+        if ($categoria) {
+            $query->where('productos.categoria', $categoria);
+        }
+
+        if ($search) {
+            $s = '%' . trim($search) . '%';
+            $query->where(function ($q) use ($s) {
+                $q->where('productos.name', 'like', $s)
+                    ->orWhere('productos.description', 'like', $s);
+            });
+        }
+
+        $productos = $query
+            ->leftJoin('insumo_productos', function ($join) {
+                $join->on('insumo_productos.producto_id', '=', 'productos.id')
+                    ->whereNull('insumo_productos.deleted_at');
+            })
+            ->leftJoin('insumos', 'insumos.id', '=', 'insumo_productos.insumo_id')
+            ->groupBy(
+                'productos.id',
+                'productos.categoria',
+                'productos.name',
+                'productos.description',
+                'productos.price',
+                'productos.image',
+                'productos.unit',
+                'productos.active',
+                'productos.ord',
+                'productos.created_at',
+                'productos.updated_at',
+                'productos.deleted_at'
+            )
+            ->selectRaw('
+                productos.*,
+                COALESCE(SUM(insumo_productos.cantidad * insumos.costo), 0) AS costo_insumos,
+                (productos.price - COALESCE(SUM(insumo_productos.cantidad * insumos.costo), 0)) AS utilidad
+            ')
+            ->orderBy('productos.ord')
+            ->get();
+
+        // Añadimos una URL completa a la imagen (opcional)
+        $productos->transform(function ($p) {
+            $p->image_url = $p->image ? asset('storage/' . $p->image) : null;
+            return $p;
+        });
+
+        return response()->json($productos);
     }
 
     // POST /products  (crear con subida opcional de imagen)
