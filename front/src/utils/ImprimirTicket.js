@@ -198,11 +198,12 @@ export class Imprimir {
           <div class="ticket-line">
             TICKET ${numero} <span class="mesa">${mesa}</span>
           </div>
+          <div class="box-firma">
           ${comment
-      ? `<div class="pie" style="margin-top:4px;">${comment}</div>`
+      ? `<div style="margin-top:4px;">${comment}</div>`
       : ''
     }
-          <div class="box-firma"></div>
+</div>
           ${type === 'INGRESO'
       ? `<div class="pie">GRACIAS POR SU COMPRA, BUEN PROVECHO</div>`
       : ''
@@ -320,12 +321,12 @@ export class Imprimir {
       <!-- RESUMEN POR MÉTODO DE PAGO (SISTEMA) -->
       <div class="resumen-row"><span>Ing. EFECTIVO:</span><span>${ingresosEfectivo.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Ing. QR:</span><span>${ingresosQr.toFixed(2)} Bs</span></div>
-      <div class="resumen-row"><span>Ing. TARJETA:</span><span>${ingresosTarjeta.toFixed(2)} Bs</span></div>
-      <div class="resumen-row"><span>Ing. ONLINE:</span><span>${ingresosOnline.toFixed(2)} Bs</span></div>
+      <!--div class="resumen-row"><span>Ing. TARJETA:</span><span>${ingresosTarjeta.toFixed(2)} Bs</span></div>
+      <div class="resumen-row"><span>Ing. ONLINE:</span><span>${ingresosOnline.toFixed(2)} Bs</span></div-->
       <hr>
 
       <!-- RESUMEN SISTEMA SOLO EFECTIVO -->
-      <div class="resumen-row"><span>Caja inicial:</span><span>${totalCajaIni.toFixed(2)} Bs</span></div>
+      <!--div class="resumen-row"><span>Caja inicial:</span><span>${totalCajaIni.toFixed(2)} Bs</span></div-->
       <div class="resumen-row"><span>Ingresos caja (efectivo):</span><span>${ingresosEfectivo.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Egresos:</span><span>${totalEgresos.toFixed(2)} Bs</span></div>
       <div class="resumen-row"><span>Tickets:</span><span>${tickets}</span></div>
@@ -598,4 +599,66 @@ export class Imprimir {
     const d = new Printd()
     d.print(area)
   }
+  static reporteUltimoCierreUsuarios (data) {
+    const logoSrc = `${window.location.origin}/chicken-logo.png`
+    const date = data.date || ''
+    const usuarios = data.usuarios || []
+
+    let filas = ''
+    usuarios.forEach(u => {
+      filas += `
+      <tr>
+        <td>${u.user_name}</td>
+        <td class="num">${u.efectivo.toFixed(2)}</td>
+        <td class="num">${u.qr.toFixed(2)}</td>
+        <td class="num">${u.total.toFixed(2)}</td>
+        <td class="num">${u.tickets}</td>
+      </tr>
+    `
+    })
+
+    const html = `
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 10px; }
+    .ticket { width: 8cm; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border:1px solid #000; padding:3px; }
+    th { background:#eee; }
+    .num { text-align:right; }
+    .center { text-align:center; }
+  </style>
+
+  <div class="ticket">
+    <div class="center">
+      <img src="${logoSrc}" width="70"><br>
+      <b>REPORTE ÚLTIMO CIERRE DE CAJA</b><br>
+      Fecha: ${date}
+    </div>
+    <br>
+    <table>
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Efectivo</th>
+          <th>QR</th>
+          <th>Total</th>
+          <th>Tickets</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filas || '<tr><td colspan="5" class="center">Sin datos</td></tr>'}
+      </tbody>
+    </table>
+
+    <div class="center" style="margin-top:5px;">
+      TOTAL GENERAL: ${Number(data.total || 0).toFixed(2)} Bs
+    </div>
+  </div>
+  `
+
+    const area = Imprimir._getArea()
+    area.innerHTML = html
+    new Printd().print(area)
+  }
+
 }

@@ -8,6 +8,41 @@ use Illuminate\Http\Request;
 
 class CierreCajaController extends Controller
 {
+    public function reporteUltimo(Request $request)
+    {
+        // último día con cierres
+        $ultimoDia = CierreCaja::orderByDesc('date')->value('date');
+
+        if (!$ultimoDia) {
+            return response()->json([
+                'message' => 'No existen cierres de caja'
+            ], 404);
+        }
+
+        $cierres = CierreCaja::with('user')
+            ->where('date', $ultimoDia)
+            ->orderBy('user_id')
+            ->get();
+
+        $usuarios = $cierres->map(function ($c) {
+            return [
+                'user_id'        => $c->user_id,
+                'user_name'      => optional($c->user)->name,
+                'efectivo'       => (float) $c->monto_efectivo,
+                'qr'             => (float) $c->monto_qr,
+                'total'          => (float) ($c->monto_efectivo + $c->monto_qr),
+                'diferencia'     => (float) $c->diferencia,
+                'tickets'        => (int) $c->tickets,
+            ];
+        });
+
+        return response()->json([
+            'date'     => $ultimoDia,
+            'usuarios' => $usuarios,
+            'total'    => $usuarios->sum('total'),
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -18,6 +53,15 @@ class CierreCajaController extends Controller
         ]);
 
         $date = $data['date'];
+//        solo permite una vez
+        $existing = CierreCaja::where('user_id', optional($request->user())->id)
+            ->where('date', $date)
+            ->first();
+        if ($existing) {
+            return response()->json([
+                'message' => 'Ya existe un cierre de caja para este usuario en la fecha indicada'
+            ], 400);
+        }
 
         $stats = $this->buildStatsForDate($date);
 

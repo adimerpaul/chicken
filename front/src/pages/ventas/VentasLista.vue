@@ -125,6 +125,15 @@
               no-caps
               class="q-mr-sm"
             />
+            <q-btn
+              color="blue"
+              icon="query_stats"
+              label="Ingresos del día"
+              no-caps
+              class="q-mr-sm"
+              @click="verIngresosHoy"
+            />
+
 
             <q-btn
               flat
@@ -150,8 +159,9 @@
     </q-card>
 
     <!-- RESUMEN SOLO ADMIN -->
-    <template v-if="$store.user.role === 'Administrador'">
-      <div class="row q-col-gutter-sm q-mt-sm">
+<!--    <template >-->
+      bb
+      <div class="row q-col-gutter-sm q-mt-sm" v-if="$store.user.role === 'Administrador'">
         <div class="col-12 col-sm-3">
           <q-card flat bordered>
             <q-card-section class="q-pa-sm">
@@ -288,7 +298,7 @@
           </div>
         </div>
       </q-card>
-    </template>
+<!--    </template>-->
 
     <!-- DETALLE VENTA -->
     <q-dialog v-model="dlg" persistent>
@@ -540,19 +550,19 @@ export default {
       dlg: false,
       current: null,
 
-      columns: [
-        { name: 'numero', label: '#', field: 'numero', align: 'left', sortable: true },
-        { name: 'actions', label: 'Opciones', field: 'id', align: 'right' },
-        { name: 'date', label: 'Fecha', field: 'date', align: 'left', sortable: true },
-        { name: 'time', label: 'Hora', field: row => String(row.time).substring(0, 8), align: 'left' },
-        { name: 'name', label: 'Cliente', field: 'name', align: 'left' },
-        { name: 'mesa', label: 'Mesa', field: 'mesa', align: 'left' },
-        { name: 'pago', label: 'Pago', field: 'pago', align: 'left' },
-        { name: 'type', label: 'Tipo', field: 'type', align: 'left' },
-        { name: 'status', label: 'Estado', field: 'status', align: 'left' },
-        { name: 'total', label: 'Total (Bs)', field: 'total', align: 'right', sortable: true },
-        { name: 'user', label: 'Usuario', field: row => row.user?.name || 'N/A', align: 'left' }
-      ],
+      // columns: [
+      //   // { name: 'numero', label: '#', field: 'numero', align: 'left', sortable: true },
+      //   // { name: 'actions', label: 'Opciones', field: 'id', align: 'right' },
+      //   // { name: 'date', label: 'Fecha', field: 'date', align: 'left', sortable: true },
+      //   // { name: 'time', label: 'Hora', field: row => String(row.time).substring(0, 8), align: 'left' },
+      //   // { name: 'name', label: 'Cliente', field: 'name', align: 'left' },
+      //   // { name: 'mesa', label: 'Mesa', field: 'mesa', align: 'left' },
+      //   // { name: 'pago', label: 'Pago', field: 'pago', align: 'left' },
+      //   // { name: 'type', label: 'Tipo', field: 'type', align: 'left' },
+      //   // { name: 'status', label: 'Estado', field: 'status', align: 'left' },
+      //   // { name: 'total', label: 'Total (Bs)', field: 'total', align: 'right', sortable: true },
+      //   // { name: 'user', label: 'Usuario', field: row => row.user?.name || 'N/A', align: 'left' }
+      // ],
       detailCols: [
         { name: 'name', label: 'Producto', field: 'name', align: 'left' },
         { name: 'qty', label: 'Cant.', field: 'qty', align: 'right' },
@@ -573,6 +583,34 @@ export default {
     this.fetchUsers()
   },
   computed: {
+    columns () {
+      // verificar si es admin
+      console.log('ROL USUARIO:', this.$store.user.role)
+      const isAdmin = this.$store.user.role === 'Administrador'
+      const baseColumns = [
+        { name: 'numero', label: '#', field: 'numero', align: 'left', sortable: true },
+        // { name: 'actions', label: 'Opciones', field: 'id', align: 'right' },
+        { name: 'date', label: 'Fecha', field: 'date', align: 'left', sortable: true },
+        { name: 'time', label: 'Hora', field: row => String(row.time).substring(0, 8), align: 'left' },
+        { name: 'name', label: 'Cliente', field: 'name', align: 'left' },
+        { name: 'mesa', label: 'Mesa', field: 'mesa', align: 'left' },
+        // { name: 'pago', label: 'Pago', field: 'pago', align: 'left' },
+        // { name: 'type', label: 'Tipo', field: 'type', align: 'left' },
+        // { name: 'status', label: 'Estado', field: 'status', align: 'left' },
+        // { name: 'total', label: 'Total (Bs)', field: 'total', align: 'right', sortable: true }
+      ]
+      if (isAdmin) {
+        // baseColumns.push({ name: 'user', label: 'Usuario', field: row => row.user?.name || 'N/A', align: 'left' })
+        baseColumns.push(
+          { name: 'actions', label: 'Opciones', field: 'id', align: 'right' },
+          { name: 'pago', label: 'Pago', field: 'pago', align: 'left' },
+          { name: 'type', label: 'Tipo', field: 'type', align: 'left' },
+          { name: 'status', label: 'Estado', field: 'status', align: 'left' },
+          { name: 'total', label: 'Total (Bs)', field: 'total', align: 'right', sortable: true }
+        )
+      }
+      return baseColumns
+    },
     total () {
       const ingresosActivos = this.rows.filter(r => r.type === 'INGRESO' && r.status === 'ACTIVO')
       const egresosActivos = this.rows.filter(r => r.type === 'EGRESO' && r.status === 'ACTIVO')
@@ -727,7 +765,7 @@ export default {
       } catch (e) {
         this.$q.notify?.({
           type: 'negative',
-          message: 'Error al registrar cierre de caja'
+          message: e.response?.data?.message || 'No se pudo guardar el cierre de caja'
         })
       } finally {
         this.loading = false
@@ -860,6 +898,17 @@ export default {
       }).finally(() => {
         this.loading = false
       })
+    },
+    async verIngresosHoy () {
+      try {
+        const { data } = await this.$axios.get('cierres-caja/reporte/ultimo')
+        Imprimir.reporteUltimoCierreUsuarios(data)
+      } catch (e) {
+        this.$q.notify?.({
+          type: 'negative',
+          message: 'No hay cierres de caja registrados'
+        })
+      }
     },
 
     async fetchSales () {
