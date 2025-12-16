@@ -606,7 +606,9 @@ export default {
           { name: 'pago', label: 'Pago', field: 'pago', align: 'left' },
           { name: 'type', label: 'Tipo', field: 'type', align: 'left' },
           { name: 'status', label: 'Estado', field: 'status', align: 'left' },
-          { name: 'total', label: 'Total (Bs)', field: 'total', align: 'right', sortable: true }
+          { name: 'total', label: 'Total (Bs)', field: 'total', align: 'right', sortable: true },
+          // user
+          { name: 'user', label: 'Usuario', field: row => row.user?.name || 'N/A', align: 'left' }
         )
       }
       return baseColumns

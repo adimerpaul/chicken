@@ -8,39 +8,96 @@ use Illuminate\Http\Request;
 
 class CierreCajaController extends Controller
 {
+    // CierreCajaController.php
+
     public function reporteUltimo(Request $request)
     {
-        // último día con cierres
-        $ultimoDia = CierreCaja::orderByDesc('date')->value('date');
+        // Última fecha con ventas
+        $fecha = Venta::orderByDesc('date')->value('date');
 
-        if (!$ultimoDia) {
-            return response()->json([
-                'message' => 'No existen cierres de caja'
-            ], 404);
+        if (!$fecha) {
+            return response()->json(['message' => 'No hay ventas'], 404);
         }
 
-        $cierres = CierreCaja::with('user')
-            ->where('date', $ultimoDia)
-            ->orderBy('user_id')
+        // Ventas ACTIVAS del día (TODOS LOS USUARIOS)
+        $ventas = Venta::whereDate('date', $fecha)
+            ->where('status', 'ACTIVO')
+            ->with('user')
             ->get();
 
-        $usuarios = $cierres->map(function ($c) {
+        // Agrupar por usuario
+        $usuarios = $ventas->groupBy('user_id')->map(function ($rows) {
+            $user = $rows->first()->user;
+
+            $efSistema = $rows->where('type', 'INGRESO')
+                ->where('pago', 'EFECTIVO')
+                ->sum('total');
+
+            $qrSistema = $rows->where('type', 'INGRESO')
+                ->where('pago', 'QR')
+                ->sum('total');
+
+            // Buscar cierre del usuario (si existe)
+            $cierre = CierreCaja::where('user_id', $user->id)
+                ->where('date', $rows->first()->date)
+                ->first();
+
+            $efContado = (float) ($cierre->monto_efectivo ?? 0);
+            $qrContado = (float) ($cierre->monto_qr ?? 0);
+
             return [
-                'user_id'        => $c->user_id,
-                'user_name'      => optional($c->user)->name,
-                'efectivo'       => (float) $c->monto_efectivo,
-                'qr'             => (float) $c->monto_qr,
-                'total'          => (float) ($c->monto_efectivo + $c->monto_qr),
-                'diferencia'     => (float) $c->diferencia,
-                'tickets'        => (int) $c->tickets,
+                'user_name'      => $user->name,
+                'ef_sistema'     => (float) $efSistema,
+                'ef_contado'     => $efContado,
+                'dif_efectivo'  => $efContado - $efSistema,
+                'qr_sistema'     => (float) $qrSistema,
+                'qr_contado'     => $qrContado,
+                'dif_qr'         => $qrContado - $qrSistema,
             ];
-        });
+        })->values();
 
         return response()->json([
-            'date'     => $ultimoDia,
-            'usuarios' => $usuarios,
-            'total'    => $usuarios->sum('total'),
+            'date' => $fecha,
+            'resumen' => [
+                'efectivo' => $usuarios->sum('ef_sistema'),
+                'qr'       => $usuarios->sum('qr_sistema'),
+            ],
+            'usuarios' => $usuarios
         ]);
+    }
+
+    protected function buildStatsForDateAndUser(string $date, int $userId): array
+    {
+        $ventas = Venta::whereDate('date', $date)
+            ->where('status', 'ACTIVO')
+            ->where('user_id', $userId)
+            ->get();
+
+        $ingresosEfectivo = (float) $ventas->where('type', 'INGRESO')->where('pago', 'EFECTIVO')->sum('total');
+        $ingresosQr       = (float) $ventas->where('type', 'INGRESO')->where('pago', 'QR')->sum('total');
+        $ingresosTarjeta  = (float) $ventas->where('type', 'INGRESO')->where('pago', 'TARJETA')->sum('total');
+        $ingresosOnline   = (float) $ventas->where('type', 'INGRESO')->where('pago', 'ONLINE')->sum('total');
+
+        $totalCajaIni     = (float) $ventas->where('type', 'CAJA')->sum('total');
+        $totalEgresos     = (float) $ventas->where('type', 'EGRESO')->sum('total');
+        $tickets          = (int)   $ventas->where('type', 'INGRESO')->count();
+
+        $totalIngresos    = $ingresosEfectivo + $ingresosQr + $ingresosTarjeta + $ingresosOnline;
+
+        // ✅ Sistema efectivo = Caja inicial + ingresos efectivo - egresos
+        $montoSistema = $totalCajaIni + $ingresosEfectivo - $totalEgresos;
+
+        return [
+            'ingresos_efectivo'   => $ingresosEfectivo,
+            'ingresos_qr'         => $ingresosQr,
+            'ingresos_tarjeta'    => $ingresosTarjeta,
+            'ingresos_online'     => $ingresosOnline,
+            'total_ingresos'      => $totalIngresos,
+            'total_egresos'       => $totalEgresos,
+            'total_caja_inicial'  => $totalCajaIni,
+            'tickets'             => $tickets,
+            'monto_sistema'       => (float) $montoSistema,
+        ];
     }
 
     public function store(Request $request)

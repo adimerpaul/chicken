@@ -600,59 +600,81 @@ export class Imprimir {
     d.print(area)
   }
   static reporteUltimoCierreUsuarios (data) {
-    const logoSrc = `${window.location.origin}/chicken-logo.png`
-    const date = data.date || ''
-    const usuarios = data.usuarios || []
+    const logo = `${window.location.origin}/chicken-logo.png`
+    const date = data?.date || ''
+    const users = data?.usuarios || []
+    const resumen = data?.resumen || {}
 
-    let filas = ''
-    usuarios.forEach(u => {
-      filas += `
-      <tr>
-        <td>${u.user_name}</td>
-        <td class="num">${u.efectivo.toFixed(2)}</td>
-        <td class="num">${u.qr.toFixed(2)}</td>
-        <td class="num">${u.total.toFixed(2)}</td>
-        <td class="num">${u.tickets}</td>
-      </tr>
+    const fmt = n => Number(n || 0).toFixed(2)
+
+    const line = (label, value) => `
+    <div class="row">
+      <span class="l">${label}</span>
+      <span class="v">${value}</span>
+    </div>
+  `
+
+    let bloques = ''
+
+    users.forEach(u => {
+      bloques += `
+      <div class="user-block">
+        <div class="user-title">${u.user_name || ''}</div>
+        ${line('EF sistema:', `${fmt(u.ef_sistema)} Bs`)}
+        ${line('EF contado:', `${fmt(u.ef_contado)} Bs`)}
+        <div class="row">
+          <span class="l">Dif. EF:</span>
+          <span class="v ${Number(u.dif_efectivo) < 0 ? 'neg' : 'pos'}">${fmt(u.dif_efectivo)} Bs</span>
+        </div>
+
+        <div class="sep"></div>
+
+        ${line('QR sistema:', `${fmt(u.qr_sistema)} Bs`)}
+        ${line('QR contado:', `${fmt(u.qr_contado)} Bs`)}
+        <div class="row">
+          <span class="l">Dif. QR:</span>
+          <span class="v ${Number(u.dif_qr) < 0 ? 'neg' : 'pos'}">${fmt(u.dif_qr)} Bs</span>
+        </div>
+      </div>
+      <div class="dash"></div>
     `
     })
 
     const html = `
   <style>
-    body { font-family: Arial, sans-serif; font-size: 10px; }
-    .ticket { width: 8cm; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { border:1px solid #000; padding:3px; }
-    th { background:#eee; }
-    .num { text-align:right; }
-    .center { text-align:center; }
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    body{ font-family: Arial, sans-serif; font-size:11px; }
+    .ticket{ width:7.2cm; padding:4px 6px; }
+    .center{ text-align:center; }
+    .logo img{ max-width:80px; display:block; margin:0 auto 3px auto; }
+    .title{ font-size:14px; font-weight:bold; }
+    .sub{ font-size:10px; }
+    .dash{ border-top:1px dashed #000; margin:6px 0; }
+    .sep{ border-top:1px solid #000; margin:4px 0; opacity:.25; }
+    .row{ display:flex; justify-content:space-between; margin-top:2px; }
+    .l{ font-weight:bold; }
+    .v{ text-align:right; }
+    .user-title{ font-size:12px; font-weight:bold; text-align:center; margin-top:4px; }
+    .neg{ color:red; font-weight:bold; }
+    .pos{ color:green; font-weight:bold; }
+    .note{ margin-top:4px; font-size:9px; text-align:center; }
   </style>
 
   <div class="ticket">
-    <div class="center">
-      <img src="${logoSrc}" width="70"><br>
-      <b>REPORTE ÚLTIMO CIERRE DE CAJA</b><br>
-      Fecha: ${date}
-    </div>
-    <br>
-    <table>
-      <thead>
-        <tr>
-          <th>Usuario</th>
-          <th>Efectivo</th>
-          <th>QR</th>
-          <th>Total</th>
-          <th>Tickets</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${filas || '<tr><td colspan="5" class="center">Sin datos</td></tr>'}
-      </tbody>
-    </table>
+    <div class="logo"><img src="${logo}" alt="logo"></div>
+    <div class="center title">CIERRE DEL DÍA</div>
+    <div class="center sub">Fecha: ${date}</div>
 
-    <div class="center" style="margin-top:5px;">
-      TOTAL GENERAL: ${Number(data.total || 0).toFixed(2)} Bs
-    </div>
+    <div class="dash"></div>
+
+    ${line('TOTAL EFECTIVO:', `${fmt(resumen.efectivo)} Bs`)}
+    ${line('TOTAL QR:', `${fmt(resumen.qr)} Bs`)}
+
+    <div class="dash"></div>
+
+    ${bloques || '<div class="center">Sin datos</div>'}
+
+    <div class="note">Diferencia = contado - sistema</div>
   </div>
   `
 
