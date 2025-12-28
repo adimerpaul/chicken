@@ -11,6 +11,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\VentaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CajaAjusteController;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -91,7 +92,9 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('salesResumen', [SaleController::class, 'resumen']);
     Route::get('cierres-caja/reporte/ultimo', [CierreCajaController::class, 'reporteUltimo']);
     Route::post('gastos', [App\Http\Controllers\VentaController::class, 'storeGasto']);
+    Route::get('reportes/ajuste-caja', [CajaAjusteController::class, 'index']);
 
 
 });
+Route::get('reportes/ajuste-caja/excel', [CajaAjusteController::class, 'excel']); // opcional
 Route::get('compras-almacen/{compra}/pdf', [AlmacenCompraController::class, 'pdf']);

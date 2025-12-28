@@ -275,6 +275,19 @@
           </q-item-section>
         </q-item>
 <!--        {-->
+<!--        path: '/reportes/ajuste-caja-garden',-->
+<!--        component: () => import('pages/reportes/ReporteAjusteCajaGarden.vue'),-->
+<!--        meta: { requiresAuth: true }-->
+<!--        },-->
+        <q-item dense to="/reportes/ajuste-caja-garden" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Reportes')">
+          <q-item-section avatar>
+            <q-icon name="account_balance_wallet" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Ajuste de Caja Garden</q-item-label>
+          </q-item-section>
+        </q-item>
+<!--        {-->
 <!--        path: '/ventas-resumen',-->
 <!--        component: () => import('pages/reportes/VentasResumen.vue'),-->
 <!--        meta: { requiresAuth: true }-->

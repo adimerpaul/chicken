@@ -41,6 +41,12 @@ const routes = [
         component: () => import('pages/reportes/Reportes.vue'),
         meta: { requiresAuth: true }
       },
+      // ReporteAjusteCajaGarden.vue
+      {
+        path: '/reportes/ajuste-caja-garden',
+        component: () => import('pages/reportes/ReporteAjusteCajaGarden.vue'),
+        meta: { requiresAuth: true }
+      },
       {
         path: '/almacenes',
         component: () => import('pages/almacen/Almacenes.vue')
