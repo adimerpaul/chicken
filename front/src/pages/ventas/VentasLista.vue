@@ -126,6 +126,14 @@
               class="q-mr-sm"
             />
             <q-btn
+              color="red"
+              icon="payments"
+              label="Gastos"
+              no-caps
+              class="q-mr-sm"
+              @click="agregarGasto"
+            />
+            <q-btn
               color="blue"
               icon="query_stats"
               label="Ingresos del día"
@@ -248,8 +256,8 @@
             <q-td :props="props">
               <q-btn-dropdown dense label="Opciones" no-caps size="xs" color="primary">
                 <q-list>
-                  <q-item clickable @click="openDetail(props.row)" v-close-popup>
-                    <q-item-section avatar><q-icon name="visibility" /></q-item-section>
+                  <q-item clickable v-if="props.row.type === 'INGRESO'" @click="openDetail(props.row)" v-close-popup>
+                  <q-item-section avatar><q-icon name="visibility" /></q-item-section>
                     <q-item-section>Ver Detalle</q-item-section>
                   </q-item>
 
@@ -504,6 +512,60 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+    <q-dialog v-model="dialogGasto" persistent>
+      <q-card style="width: 420px; max-width: 95vw">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1 text-bold">Agregar Gasto</div>
+          <q-space />
+          <q-btn flat round dense icon="close" @click="dialogGasto = false" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-sm">
+          <q-input
+            v-model="venta.name"
+            label="Descripción"
+            outlined
+            dense
+            class="q-mb-sm"
+          />
+
+          <q-input
+            v-model.number="venta.total"
+            label="Monto (Bs)"
+            type="number"
+            step="0.01"
+            outlined
+            dense
+            class="q-mb-sm"
+          />
+
+          <q-select
+            v-model="venta.pago"
+            label="Pago"
+            outlined
+            dense
+            :options="['EFECTIVO','QR']"
+            class="q-mb-sm"
+          />
+
+          <q-input
+            v-model="venta.comment"
+            label="Comentario (opcional)"
+            outlined
+            dense
+            type="textarea"
+            autogrow
+            class="q-mb-sm"
+          />
+
+          <div class="text-right">
+            <q-btn flat label="Cancelar" color="grey-8" no-caps class="q-mr-sm" @click="dialogGasto=false"/>
+            <q-btn label="Guardar e imprimir" color="primary" no-caps @click="guardarGasto" :loading="loading" />
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
 
     <div id="myelement" class="hidden"></div>
   </q-page>
@@ -532,7 +594,7 @@ export default {
       },
       loading: false,
       rows: [],
-      venta: {},
+      venta: { name: '', total: null, pago: 'EFECTIVO', comment: '' },
       dialogGasto: false,
       meta: { current_page: 1, last_page: 1, total: 0, from: 0, to: 0, per_page: 20 },
       pagination: { page: 1, rowsPerPage: 20, sortBy: 'date', descending: true },
@@ -678,6 +740,48 @@ export default {
     }
   },
   methods: {
+    agregarGasto () {
+      this.venta = { name: '', total: null, pago: 'EFECTIVO', comment: '' }
+      this.dialogGasto = true
+    },
+    async guardarGasto () {
+      if (!this.venta?.name || !this.venta?.total || Number(this.venta.total) <= 0) {
+        this.$q.notify?.({ type: 'negative', message: 'Ingrese descripción y monto válido' })
+        return
+      }
+
+      this.loading = true
+      // try {
+        const payload = {
+          name: this.venta.name,
+          total: Number(this.venta.total),
+          pago: this.venta.pago || 'EFECTIVO',
+          comment: this.venta.comment || null
+        }
+
+        const { data } = await this.$axios.post('gastos', payload)
+
+        this.$q.notify?.({ type: 'positive', message: 'Gasto registrado' })
+        this.dialogGasto = false
+
+        // ✅ imprimir
+        Imprimir.gasto(data) // <-- lo añadimos abajo en tu ImprimirTicket
+
+        // limpiar
+        this.venta = { name: '', total: null, pago: 'EFECTIVO', comment: '' }
+
+        // refrescar lista
+        this.fetchSales()
+      // }
+      // catch (e) {
+      //   this.$q.notify?.({
+      //     type: 'negative',
+      //     message: e?.response?.data?.message || 'Error al guardar gasto'
+      //   })
+      // } finally {
+      //   this.loading = false
+      // }
+    },
     async fetchUsers () {
       try {
         const { data } = await this.$axios.get('users')
@@ -875,32 +979,6 @@ export default {
       this.dialogGasto = true
     },
 
-    guardarGasto () {
-      if (!this.venta.name || !this.venta.total) {
-        this.$q.notify?.({ type: 'negative', message: 'Complete todos los campos' })
-        return
-      }
-      this.loading = true
-      this.$axios.post('sales', {
-        name: this.venta.name,
-        total: this.venta.total,
-        type: 'EGRESO',
-        status: 'ACTIVO',
-        mesa: 'GASTO',
-        pago: 'EFECTIVO',
-        detalles: [],
-        products: []
-      }).then(() => {
-        this.$q.notify?.({ type: 'positive', message: 'Gasto agregado' })
-        this.dialogGasto = false
-        this.venta = {}
-        this.fetchSales()
-      }).catch(() => {
-        this.$q.notify?.({ type: 'negative', message: 'Error al guardar gasto' })
-      }).finally(() => {
-        this.loading = false
-      })
-    },
     async verIngresosHoy () {
       try {
         const { data } = await this.$axios.get('cierres-caja/reporte/ultimo')
