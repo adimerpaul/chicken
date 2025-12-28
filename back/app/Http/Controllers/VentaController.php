@@ -12,6 +12,43 @@ use Carbon\Carbon;
 
 class VentaController extends Controller
 {
+    public function storeGasto(Request $request)
+    {
+        $data = $request->validate([
+            'name'    => ['required','string','max:180'],  // descripción del gasto
+            'total'   => ['required','numeric','min:0.01'],
+            'pago'    => ['nullable','string','max:40'],   // EFECTIVO | QR
+            'comment' => ['nullable','string','max:500'],
+        ]);
+
+        return DB::transaction(function () use ($data, $request) {
+            $now  = Carbon::now();
+            $date = $now->toDateString();
+            $time = $now->toTimeString();
+
+            $numero = (int) (Venta::where('date', $date)->max('numero') ?? 0) + 1;
+
+            $venta = Venta::create([
+                'date'    => $date,
+                'time'    => $time,
+                'total'   => (float)$data['total'],
+                'name'    => $data['name'], // descripción del gasto
+                'user_id' => optional($request->user())->id,
+                'client_id' => null,
+
+                'type'    => 'EGRESO',
+                'status'  => 'ACTIVO',
+                'mesa'    => 'GASTO',
+                'pago'    => $data['pago'] ?? 'EFECTIVO',
+                'llamada' => null,
+                'comment' => $data['comment'] ?? null,
+                'numero'  => $numero,
+            ]);
+
+            // 👇 Importante: NO creamos detalles, NO descontamos insumos.
+            return $venta->load('user');
+        });
+    }
     function anular(Venta $sale)
     {
         $sale->status = 'ANULADO';
