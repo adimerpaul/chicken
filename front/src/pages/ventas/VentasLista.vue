@@ -982,7 +982,7 @@ export default {
     async verIngresosHoy () {
       try {
         const { data } = await this.$axios.get('cierres-caja/reporte/ultimo')
-        Imprimir.reporteUltimoCierreUsuarios(data)
+        // Imprimir.reporteUltimoCierreUsuarios(data)
       } catch (e) {
         this.$q.notify?.({
           type: 'negative',
