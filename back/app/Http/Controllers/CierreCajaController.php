@@ -85,23 +85,81 @@ class CierreCajaController extends Controller
         $totalIngresos    = $ingresosEfectivo + $ingresosQr + $ingresosTarjeta + $ingresosOnline;
 
         // ✅ Sistema efectivo = Caja inicial + ingresos efectivo - egresos
-        $montoSistema = $totalCajaIni + $ingresosEfectivo - $totalEgresos;
+        $montoSistemaEfectivo = $totalCajaIni + $ingresosEfectivo - $totalEgresos;
 
         return [
             'ingresos_efectivo'   => $ingresosEfectivo,
             'ingresos_qr'         => $ingresosQr,
             'ingresos_tarjeta'    => $ingresosTarjeta,
             'ingresos_online'     => $ingresosOnline,
-            'total_ingresos'      => $totalIngresos,
-            'total_egresos'       => $totalEgresos,
-            'total_caja_inicial'  => $totalCajaIni,
+            'total_ingresos'      => (float) $totalIngresos,
+            'total_egresos'       => (float) $totalEgresos,
+            'total_caja_inicial'  => (float) $totalCajaIni,
             'tickets'             => $tickets,
-            'monto_sistema'       => (float) $montoSistema,
+            'monto_sistema'       => (float) $montoSistemaEfectivo,
         ];
     }
 
+    protected function attachComputedFields(CierreCaja $cierre): CierreCaja
+    {
+        $userId = (int) $cierre->user_id;
+        $date   = (string) $cierre->date;
+
+        $stats = $this->buildStatsForDateAndUser($date, $userId);
+
+        $montoSistemaEfectivo = (float) $stats['monto_sistema'];
+        $qrSistema            = (float) $stats['ingresos_qr'];
+
+        $efSistema = $montoSistemaEfectivo; // efectivo esperado
+        $qrSistema = $qrSistema;
+
+        $efContado = (float) ($cierre->monto_efectivo ?? 0);
+        $qrContado = (float) ($cierre->monto_qr ?? 0);
+
+        $esperadoTotal = $efSistema + $qrSistema;
+        $contadoTotal  = $efContado + $qrContado;
+
+        $cierre->total_ingresos     = $stats['total_ingresos'];
+        $cierre->total_egresos      = $stats['total_egresos'];
+        $cierre->total_caja_inicial = $stats['total_caja_inicial'];
+        $cierre->tickets            = $stats['tickets'];
+
+        // guardado en tabla:
+        $cierre->monto_sistema      = $efSistema;
+        $cierre->diferencia         = $contadoTotal - $esperadoTotal;
+
+        // extra para impresión:
+        $cierre->ingresos_efectivo  = $stats['ingresos_efectivo'];
+        $cierre->ingresos_qr        = $stats['ingresos_qr'];
+        $cierre->ingresos_tarjeta   = $stats['ingresos_tarjeta'];
+        $cierre->ingresos_online    = $stats['ingresos_online'];
+
+        $cierre->ef_sistema         = $efSistema;
+        $cierre->ef_contado         = $efContado;
+        $cierre->dif_efectivo       = $efContado - $efSistema;
+
+        $cierre->qr_sistema         = $qrSistema;
+        $cierre->qr_contado         = $qrContado;
+        $cierre->dif_qr             = $qrContado - $qrSistema;
+
+        $cierre->esperado_total     = $esperadoTotal;
+        $cierre->contado_total      = $contadoTotal;
+
+        return $cierre;
+    }
+
+    // =========================
+    // POST: Cierre por usuario
+    // =========================
     public function store(Request $request)
     {
+        $user = $request->user();
+        $userId = (int) optional($user)->id;
+
+        if (!$userId) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+
         $data = $request->validate([
             'date'           => ['required', 'date'],
             'monto_efectivo' => ['required', 'numeric'],
@@ -110,80 +168,86 @@ class CierreCajaController extends Controller
         ]);
 
         $date = $data['date'];
-//        solo permite una vez
-        $existing = CierreCaja::where('user_id', optional($request->user())->id)
+
+        // ✅ Solo una vez por usuario y fecha
+        $existing = CierreCaja::where('user_id', $userId)
             ->where('date', $date)
             ->first();
+
         if ($existing) {
+            $existing = $this->attachComputedFields($existing)->load('user');
             return response()->json([
-                'message' => 'Ya existe un cierre de caja para este usuario en la fecha indicada'
-            ], 400);
+                'already_exists' => true,
+                'message' => 'Ya existe un cierre para este usuario y fecha. Se devolverá para imprimir.',
+                'cierre' => $existing
+            ], 200);
         }
 
-        $stats = $this->buildStatsForDate($date);
+        // Stats SOLO del usuario
+        $stats = $this->buildStatsForDateAndUser($date, $userId);
 
-        $montoSistemaEfectivo = $stats['monto_sistema'];
-        $ingresosQr           = $stats['ingresos_qr'];
+        $efSistema = (float) $stats['monto_sistema'];
+        $qrSistema = (float) $stats['ingresos_qr'];
 
-        $esperadoTotal = $montoSistemaEfectivo + $ingresosQr;
-        $contadoTotal  = $data['monto_efectivo'] + $data['monto_qr'];
-        $diferenciaTotal = $contadoTotal - $esperadoTotal;
+        $esperadoTotal = $efSistema + $qrSistema;
+        $contadoTotal  = (float)$data['monto_efectivo'] + (float)$data['monto_qr'];
 
         $cierre = CierreCaja::create([
-            'user_id'            => optional($request->user())->id,
+            'user_id'            => $userId,
             'date'               => $date,
             'total_ingresos'     => $stats['total_ingresos'],
             'total_egresos'      => $stats['total_egresos'],
             'total_caja_inicial' => $stats['total_caja_inicial'],
             'tickets'            => $stats['tickets'],
+
             'monto_efectivo'     => $data['monto_efectivo'],
             'monto_qr'           => $data['monto_qr'],
-            'monto_sistema'      => $montoSistemaEfectivo,
-            'diferencia'         => $diferenciaTotal,
+
+            'monto_sistema'      => $efSistema,
+            'diferencia'         => $contadoTotal - $esperadoTotal,
+
             'observacion'        => $data['observacion'] ?? null,
         ]);
 
-        $cierre->ingresos_efectivo = $stats['ingresos_efectivo'];
-        $cierre->ingresos_qr       = $stats['ingresos_qr'];
-        $cierre->ingresos_tarjeta  = $stats['ingresos_tarjeta'];
-        $cierre->ingresos_online   = $stats['ingresos_online'];
-        $cierre->esperado_total    = $esperadoTotal;
-        $cierre->contado_total     = $contadoTotal;
+        $cierre = $this->attachComputedFields($cierre)->load('user');
 
-        return response()->json($cierre->load('user'));
+        return response()->json([
+            'already_exists' => false,
+            'message' => 'Cierre registrado',
+            'cierre' => $cierre
+        ], 201);
     }
 
-    public function show(CierreCaja $cierreCaja)
+    // =========================
+    // GET: ver un cierre
+    // =========================
+    public function show(CierreCaja $cierreCaja, Request $request)
     {
-        $stats = $this->buildStatsForDate($cierreCaja->date);
+        // opcional: seguridad: solo admin o dueño
+        $user = $request->user();
+        $isAdmin = optional($user)->role === 'Administrador';
 
-        $montoSistemaEfectivo = $stats['monto_sistema'];
-        $ingresosQr           = $stats['ingresos_qr'];
+        if (!$isAdmin && (int)$cierreCaja->user_id !== (int)optional($user)->id) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
 
-        $esperadoTotal = $montoSistemaEfectivo + $ingresosQr;
-        $contadoTotal  = ($cierreCaja->monto_efectivo ?? 0) + ($cierreCaja->monto_qr ?? 0);
-        $diferencia    = $contadoTotal - $esperadoTotal;
+        $cierreCaja = $this->attachComputedFields($cierreCaja)->load('user');
 
-        $cierreCaja->total_ingresos     = $stats['total_ingresos'];
-        $cierreCaja->total_egresos      = $stats['total_egresos'];
-        $cierreCaja->total_caja_inicial = $stats['total_caja_inicial'];
-        $cierreCaja->tickets            = $stats['tickets'];
-        $cierreCaja->monto_sistema      = $montoSistemaEfectivo;
-        $cierreCaja->diferencia         = $diferencia;
-
-        $cierreCaja->ingresos_efectivo  = $stats['ingresos_efectivo'];
-        $cierreCaja->ingresos_qr        = $stats['ingresos_qr'];
-        $cierreCaja->ingresos_tarjeta   = $stats['ingresos_tarjeta'];
-        $cierreCaja->ingresos_online    = $stats['ingresos_online'];
-        $cierreCaja->esperado_total     = $esperadoTotal;
-        $cierreCaja->contado_total      = $contadoTotal;
-
-        return response()->json($cierreCaja->load('user'));
+        return response()->json([
+            'cierre' => $cierreCaja
+        ]);
     }
 
-    public function ultimo(Request $request)
+    // =========================
+    // GET: último cierre del usuario logueado
+    // =========================
+    public function ultimoMio(Request $request)
     {
+        $user = $request->user();
+        $userId = (int) optional($user)->id;
+
         $cierre = CierreCaja::with('user')
+            ->where('user_id', $userId)
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->first();
@@ -192,38 +256,8 @@ class CierreCajaController extends Controller
             return response()->json(['message' => 'No hay cierres de caja registrados'], 404);
         }
 
-        return $this->show($cierre);
-    }
+        $cierre = $this->attachComputedFields($cierre);
 
-    protected function buildStatsForDate(string $date): array
-    {
-        $ventas = Venta::whereDate('date', $date)
-            ->where('status', 'ACTIVO')
-            ->get();
-
-        $ingresosEfectivo = $ventas->where('type', 'INGRESO')->where('pago', 'EFECTIVO')->sum('total');
-        $ingresosQr       = $ventas->where('type', 'INGRESO')->where('pago', 'QR')->sum('total');
-        $ingresosTarjeta  = $ventas->where('type', 'INGRESO')->where('pago', 'TARJETA')->sum('total');
-        $ingresosOnline   = $ventas->where('type', 'INGRESO')->where('pago', 'ONLINE')->sum('total');
-
-        $totalCajaIni     = $ventas->where('type', 'CAJA')->sum('total');
-        $totalEgresos     = $ventas->where('type', 'EGRESO')->sum('total');
-        $tickets          = $ventas->where('type', 'INGRESO')->count();
-
-        $totalIngresos    = $ingresosEfectivo + $ingresosQr + $ingresosTarjeta + $ingresosOnline;
-
-        $montoSistema = $totalCajaIni + $ingresosEfectivo - $totalEgresos;
-
-        return [
-            'ingresos_efectivo'   => $ingresosEfectivo,
-            'ingresos_qr'         => $ingresosQr,
-            'ingresos_tarjeta'    => $ingresosTarjeta,
-            'ingresos_online'     => $ingresosOnline,
-            'total_ingresos'      => $totalIngresos,
-            'total_egresos'       => $totalEgresos,
-            'total_caja_inicial'  => $totalCajaIni,
-            'tickets'             => $tickets,
-            'monto_sistema'       => $montoSistema,
-        ];
+        return response()->json(['cierre' => $cierre]);
     }
 }

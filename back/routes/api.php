@@ -66,9 +66,11 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('reportes/ventas', [ReporteController::class, 'ventas']);
     Route::get('reportes/insumos', [ReporteController::class, 'insumos']);
 
-    Route::post('cierres-caja', [CierreCajaController::class, 'store']);
-    Route::get('cierres-caja/{cierreCaja}', [CierreCajaController::class, 'show']);
-    Route::get('cierres-caja-ultimo', [CierreCajaController::class, 'ultimo']);
+    Route::post('cierres-caja', [CierreCajaController::class, 'store']);   // ya lo tenías
+    Route::get('cierres-caja/{cierreCaja}', [CierreCajaController::class, 'show']); // ya lo tenías
+
+// ✅ NUEVO: último cierre del usuario logueado
+    Route::get('cierres-caja/mio/ultimo', [CierreCajaController::class, 'ultimoMio']);
 
     Route::get('sales/report/by-user', [VentaController::class, 'resumenPorUsuario']);
 

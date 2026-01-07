@@ -10,11 +10,36 @@
           </div>
         </div>
 
-        <div class="col-6 col-sm-3">
+        <div class="col-6 col-sm-2">
           <q-input v-model="filters.date_from" type="date" dense outlined label="Desde" />
         </div>
-        <div class="col-6 col-sm-3">
+
+        <div class="col-6 col-sm-2">
           <q-input v-model="filters.date_to" type="date" dense outlined label="Hasta" />
+        </div>
+
+        <!-- NUEVO: PAGO -->
+        <div class="col-6 col-sm-2">
+          <q-select
+            v-model="filters.pago"
+            :options="pagoOptions"
+            label="Pago"
+            dense outlined
+            emit-value map-options
+            clearable
+          />
+        </div>
+
+        <!-- NUEVO: USUARIO -->
+        <div class="col-6 col-sm-2">
+          <q-select
+            v-model="filters.user_id"
+            :options="userOptions"
+            label="Usuario"
+            dense outlined
+            emit-value map-options
+            clearable
+          />
         </div>
 
         <div class="col-12 col-sm-2 text-right">
@@ -249,17 +274,34 @@ export default {
     return {
       loading: false,
       title: 'AJUSTE EN CAJA GARDEN ORURO',
-      filters: { date_from: null, date_to: null },
+      filters: {
+        date_from: null,
+        date_to: null,
+        pago: null,     // NUEVO
+        user_id: null   // NUEVO
+      },
 
       users: [],
       rows: [],
       detalle: { ingresos_by_day: {}, egresos_by_day: {} },
       totales: { ingresos: 0, egresos: 0, en_caja: 0 },
 
-      selectedDay: null
+      selectedDay: null,
+
+      pagoOptions: [
+        { label: 'Todos', value: null },
+        { label: 'EFECTIVO', value: 'EFECTIVO' },
+        { label: 'QR', value: 'QR' }
+      ]
     }
   },
   computed: {
+    userOptions () {
+      return [
+        { label: 'Todos', value: null },
+        ...this.users.map(u => ({ label: u.name, value: u.id }))
+      ]
+    },
     selectedRow () {
       return this.rows.find(r => r.fecha === this.selectedDay) || null
     },
@@ -273,7 +315,6 @@ export default {
     }
   },
   mounted () {
-    // por defecto: semana actual (Lun-Dom)
     this.setWeek()
   },
   methods: {
@@ -298,8 +339,8 @@ export default {
     },
 
     setWeek () {
-      const start = moment().startOf('isoWeek') // isoWeek = Lunes
-      const end = moment().endOf('isoWeek')     // Domingo
+      const start = moment().startOf('isoWeek')
+      const end = moment().endOf('isoWeek')
       this.filters.date_from = start.format('YYYY-MM-DD')
       this.filters.date_to = end.format('YYYY-MM-DD')
       this.fetchData(false)
@@ -314,7 +355,12 @@ export default {
       try {
         const params = week
           ? { week: 1 }
-          : { date_from: this.filters.date_from, date_to: this.filters.date_to }
+          : {
+            date_from: this.filters.date_from,
+            date_to: this.filters.date_to,
+            pago: this.filters.pago,
+            user_id: this.filters.user_id
+          }
 
         const { data } = await this.$axios.get('reportes/ajuste-caja', { params })
 
@@ -322,12 +368,15 @@ export default {
         this.filters.date_from = data.date_from
         this.filters.date_to = data.date_to
 
+        // mantener lo seleccionado (si backend devuelve null, se mantiene igual)
+        this.filters.pago = data.pago ?? this.filters.pago
+        this.filters.user_id = data.user_id ?? this.filters.user_id
+
         this.users = data.users || []
         this.rows = data.rows || []
         this.detalle = data.detalle || { ingresos_by_day: {}, egresos_by_day: {} }
         this.totales = data.totales || this.totales
 
-        // Selección automática: primer día de la semana/rango
         this.selectedDay = this.rows?.[0]?.fecha || null
       } catch (e) {
         this.$q.notify?.({
@@ -342,7 +391,9 @@ export default {
     exportExcel () {
       const params = new URLSearchParams({
         date_from: this.filters.date_from,
-        date_to: this.filters.date_to
+        date_to: this.filters.date_to,
+        pago: this.filters.pago || '',
+        user_id: this.filters.user_id || ''
       }).toString()
 
       window.open(`${this.$axios.defaults.baseURL}/reportes/ajuste-caja/excel?${params}`, '_blank')

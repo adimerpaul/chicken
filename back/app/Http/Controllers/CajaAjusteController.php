@@ -15,7 +15,6 @@ class CajaAjusteController extends Controller
     private function weekRange(?string $anyDate = null): array
     {
         $d = $anyDate ? Carbon::parse($anyDate) : now();
-        // En Bolivia normalmente semana Lun-Dom. Carbon: startOfWeek(MONDAY)
         $start = $d->copy()->startOfWeek(Carbon::MONDAY)->toDateString();
         $end   = $d->copy()->endOfWeek(Carbon::SUNDAY)->toDateString();
         return [$start, $end];
@@ -26,7 +25,10 @@ class CajaAjusteController extends Controller
         $dateFrom = $req->input('date_from');
         $dateTo   = $req->input('date_to');
 
-        // si viene week=1 => semana actual Lun-Dom
+        // NUEVO: filtros
+        $pago   = $req->input('pago');     // 'QR' o 'EFECTIVO'
+        $userId = $req->input('user_id');  // id de user
+
         if ($req->boolean('week') || (!$dateFrom && !$dateTo)) {
             [$dateFrom, $dateTo] = $this->weekRange($req->input('anchor_date'));
         } else {
@@ -34,7 +36,7 @@ class CajaAjusteController extends Controller
             $dateTo   = $dateTo ?: now()->toDateString();
         }
 
-        // Generar lista completa de días (para mostrar 0 aunque no haya registros)
+        // Lista completa de días (para mostrar 0 aunque no haya registros)
         $days = [];
         $cursor = Carbon::parse($dateFrom);
         $end = Carbon::parse($dateTo);
@@ -48,48 +50,64 @@ class CajaAjusteController extends Controller
             $cursor->addDay();
         }
 
+        // Lista de usuarios (para el select y panel)
+        $usersAll = DB::table('users')
+            ->select('id', 'name')
+            ->orderBy('name', 'asc')
+            ->get()
+            ->map(fn($u) => ['id' => (int)$u->id, 'name' => $u->name])
+            ->values();
+
+        // Helper para aplicar filtros a un query de ventas
+        $applyFilters = function ($q) use ($dateFrom, $dateTo, $pago, $userId) {
+            $q->whereBetween(DB::raw('DATE(v.date)'), [$dateFrom, $dateTo]);
+
+            if ($pago) {
+                $q->where('v.pago', $pago);
+            }
+            if ($userId) {
+                $q->where('v.user_id', $userId);
+            }
+
+            return $q;
+        };
+
         // ============
         // 1) INGRESOS: total por día
         // ============
-        $ingTotalByDay = DB::table('ventas as v')
-            ->selectRaw("DATE(v.date) as fecha")
-            ->selectRaw("SUM(CASE WHEN v.status='ACTIVO' THEN v.total ELSE 0 END) as total")
-            ->whereBetween(DB::raw('DATE(v.date)'), [$dateFrom, $dateTo])
-            ->where('v.type', 'INGRESO')
-            ->groupBy(DB::raw('DATE(v.date)'))
-            ->get()
-            ->keyBy('fecha');
+        $ingTotalByDay = $applyFilters(
+            DB::table('ventas as v')
+                ->selectRaw("DATE(v.date) as fecha")
+                ->selectRaw("SUM(CASE WHEN v.status='ACTIVO' THEN v.total ELSE 0 END) as total")
+                ->where('v.type', 'INGRESO')
+                ->groupBy(DB::raw('DATE(v.date)'))
+        )->get()->keyBy('fecha');
 
         // ============
         // 2) EGRESOS: total por día
         // ============
-        $egrTotalByDay = DB::table('ventas as v')
-            ->selectRaw("DATE(v.date) as fecha")
-            ->selectRaw("SUM(CASE WHEN v.status='ACTIVO' THEN v.total ELSE 0 END) as total")
-            ->whereBetween(DB::raw('DATE(v.date)'), [$dateFrom, $dateTo])
-            ->where('v.type', 'EGRESO')
-            ->groupBy(DB::raw('DATE(v.date)'))
-            ->get()
-            ->keyBy('fecha');
+        $egrTotalByDay = $applyFilters(
+            DB::table('ventas as v')
+                ->selectRaw("DATE(v.date) as fecha")
+                ->selectRaw("SUM(CASE WHEN v.status='ACTIVO' THEN v.total ELSE 0 END) as total")
+                ->where('v.type', 'EGRESO')
+                ->groupBy(DB::raw('DATE(v.date)'))
+        )->get()->keyBy('fecha');
 
         // ============
-        // 3) DETALLE INGRESOS POR DÍA Y USUARIO (para el panel de abajo)
+        // 3) DETALLE INGRESOS POR DÍA Y USUARIO
         // ============
-        $ingDetalle = DB::table('ventas as v')
+        $ingDetalleQuery = DB::table('ventas as v')
             ->join('users as u', 'u.id', '=', 'v.user_id')
             ->selectRaw("DATE(v.date) as fecha")
             ->addSelect('u.id as user_id', 'u.name as user_name')
             ->selectRaw("SUM(CASE WHEN v.status='ACTIVO' THEN v.total ELSE 0 END) as total")
-            ->whereBetween(DB::raw('DATE(v.date)'), [$dateFrom, $dateTo])
             ->where('v.type', 'INGRESO')
             ->groupBy(DB::raw('DATE(v.date)'), 'u.id', 'u.name')
-            ->orderBy(DB::raw('DATE(v.date)'), 'asc')
-            ->get();
+            ->orderBy(DB::raw('DATE(v.date)'), 'asc');
 
-        $users = collect($ingDetalle)
-            ->map(fn($r) => ['id' => (int)$r->user_id, 'name' => $r->user_name])
-            ->unique('id')
-            ->values();
+        $applyFilters($ingDetalleQuery);
+        $ingDetalle = $ingDetalleQuery->get();
 
         // index: fecha -> user_id -> total
         $ingDetalleByDay = [];
@@ -102,15 +120,16 @@ class CajaAjusteController extends Controller
         // ============
         // 4) DETALLE EGRESOS POR DÍA (lista)
         // ============
-        $egrDetalle = DB::table('ventas as v')
+        $egrDetalleQuery = DB::table('ventas as v')
             ->selectRaw("DATE(v.date) as fecha")
             ->addSelect('v.name as detalle', 'v.total', 'v.id')
-            ->whereBetween(DB::raw('DATE(v.date)'), [$dateFrom, $dateTo])
             ->where('v.type', 'EGRESO')
             ->where('v.status', 'ACTIVO')
             ->orderBy(DB::raw('DATE(v.date)'), 'asc')
-            ->orderBy('v.id', 'asc')
-            ->get();
+            ->orderBy('v.id', 'asc');
+
+        $applyFilters($egrDetalleQuery);
+        $egrDetalle = $egrDetalleQuery->get();
 
         $egrDetalleByDay = [];
         foreach ($egrDetalle as $r) {
@@ -124,7 +143,7 @@ class CajaAjusteController extends Controller
         }
 
         // ============
-        // 5) Construcción final: rows de la semana (o rango)
+        // 5) Construcción final rows
         // ============
         $rows = collect($days)->map(function ($d) use ($ingTotalByDay, $egrTotalByDay) {
             $f = $d['fecha'];
@@ -144,21 +163,23 @@ class CajaAjusteController extends Controller
         $totEgresos  = (float)$rows->sum('egresos_total');
         $totCaja     = $totIngresos - $totEgresos;
 
-        // ============
-        // 6) payload listo para UI
-        // ============
         return response()->json([
             'title' => 'AJUSTE EN CAJA GARDEN ORURO',
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
 
-            'users' => $users,
+            // NUEVO: devolver filtros
+            'pago' => $pago,
+            'user_id' => $userId,
+
+            // usuarios para select / panel
+            'users' => $usersAll,
+
             'rows' => $rows,
 
-            // Para el panel "abajito"
             'detalle' => [
-                'ingresos_by_day' => $ingDetalleByDay,   // fecha => {user_id: total}
-                'egresos_by_day' => $egrDetalleByDay,    // fecha => [{detalle,total}]
+                'ingresos_by_day' => $ingDetalleByDay,
+                'egresos_by_day' => $egrDetalleByDay,
             ],
 
             'totales' => [
@@ -169,7 +190,7 @@ class CajaAjusteController extends Controller
         ]);
     }
 
-    // EXCEL (opcional): tabla por día + detalle en hojas
+    // EXCEL (opcional)
     public function excel(Request $req)
     {
         $data = $this->index($req)->getData(true);
@@ -183,9 +204,11 @@ class CajaAjusteController extends Controller
         $s1->setCellValue('A1', $data['title']);
         $s1->setCellValue('A2', 'Desde: '.$data['date_from']);
         $s1->setCellValue('C2', 'Hasta: '.$data['date_to']);
+        $s1->setCellValue('A3', 'Pago: '.($data['pago'] ?: 'Todos'));
+        $s1->setCellValue('C3', 'Usuario: '.($data['user_id'] ?: 'Todos'));
 
-        $s1->fromArray(['Fecha', 'Día', 'Ingresos', 'Egresos', 'En Caja'], null, 'A4');
-        $r = 5;
+        $s1->fromArray(['Fecha', 'Día', 'Ingresos', 'Egresos', 'En Caja'], null, 'A5');
+        $r = 6;
         foreach ($data['rows'] as $row) {
             $s1->fromArray([
                 $row['label'],
@@ -219,6 +242,7 @@ class CajaAjusteController extends Controller
 
             $line = [$row['label']];
             $sum = 0;
+
             foreach ($data['users'] as $u) {
                 $v = (float)($ingMap[(string)$u['id']] ?? 0);
                 $sum += $v;
@@ -245,7 +269,7 @@ class CajaAjusteController extends Controller
             }
         }
 
-        $fileName = "ajuste_caja_semana_{$data['date_from']}_{$data['date_to']}.xlsx";
+        $fileName = "ajuste_caja_{$data['date_from']}_{$data['date_to']}.xlsx";
 
         return response()->streamDownload(function () use ($spreadsheet) {
             $writer = new Xlsx($spreadsheet);

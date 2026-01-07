@@ -862,20 +862,34 @@ export default {
       }
 
       this.loading = true
-      try {
+      // try {
         const { data } = await this.$axios.post('cierres-caja', this.cierre)
-        this.$q.notify?.({ type: 'positive', message: 'Cierre de caja registrado' })
+
+        const cierre = data?.cierre
+        const already = !!data?.already_exists
+
+        // ✅ Si ya existe: NO decir "guardado"
+        if (already) {
+          this.$q.notify?.({ type: 'info', message: 'Cierre ya registrado. Imprimiendo…' })
+        } else {
+          this.$q.notify?.({ type: 'positive', message: 'Cierre registrado' })
+        }
+
         this.dialogCierre = false
 
-        Imprimir.cierreCaja(data)
-      } catch (e) {
-        this.$q.notify?.({
-          type: 'negative',
-          message: e.response?.data?.message || 'No se pudo guardar el cierre de caja'
-        })
-      } finally {
-        this.loading = false
-      }
+        // ✅ imprimir SOLO usuario
+        Imprimir.cierreCajaUsuario(cierre)
+
+        // refrescar lista
+        this.fetchSales()
+      // } catch (e) {
+      //   this.$q.notify?.({
+      //     type: 'negative',
+      //     message: e.response?.data?.message || 'No se pudo guardar / imprimir el cierre'
+      //   })
+      // } finally {
+      //   this.loading = false
+      // }
     },
 
     async printResumenUsuarios () {
@@ -981,9 +995,12 @@ export default {
 
     async verIngresosHoy () {
       try {
+        this.loading = true
         const { data } = await this.$axios.get('cierres-caja/reporte/ultimo')
-        // Imprimir.reporteUltimoCierreUsuarios(data)
+        Imprimir.reporteUltimoCierreUsuarios(data)
+        this.loading = false
       } catch (e) {
+        this.loading = false
         this.$q.notify?.({
           type: 'negative',
           message: 'No hay cierres de caja registrados'

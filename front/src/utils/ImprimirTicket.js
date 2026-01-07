@@ -599,6 +599,107 @@ export class Imprimir {
     const d = new Printd()
     d.print(area)
   }
+  static cierreCajaUsuario (cierre) {
+    if (!cierre) return
+
+    const logo = `${window.location.origin}/chicken-logo.png`
+
+    // Datos base
+    const date = cierre?.date || ''
+    const userName = cierre?.user?.name || 'Usuario'
+
+    // Valores (preferimos los campos nuevos, si no existen calculamos)
+    const efSistema = Number(cierre.ef_sistema ?? cierre.monto_sistema ?? 0)
+    const efContado = Number(cierre.ef_contado ?? cierre.monto_efectivo ?? 0)
+    const difEf = Number(cierre.dif_efectivo ?? (efContado - efSistema))
+
+    const qrSistema = Number(cierre.qr_sistema ?? cierre.ingresos_qr ?? 0)
+    const qrContado = Number(cierre.qr_contado ?? cierre.monto_qr ?? 0)
+    const difQr = Number(cierre.dif_qr ?? (qrContado - qrSistema))
+
+    // Resumen arriba (como cierre del día, pero 1 usuario)
+    const resumen = {
+      efectivo: efSistema,
+      qr: qrSistema
+    }
+
+    const fmt = n => Number(n || 0).toFixed(2)
+
+    const line = (label, value) => `
+    <div class="row">
+      <span class="l">${label}</span>
+      <span class="v">${value}</span>
+    </div>
+  `
+
+    // Bloque estilo "reporteUltimoCierreUsuarios" pero solo 1 usuario
+    const bloque = `
+    <div class="user-block">
+      <div class="user-title">${userName}</div>
+
+      ${line('EF sistema:', `${fmt(efSistema)} Bs`)}
+      ${line('EF contado:', `${fmt(efContado)} Bs`)}
+      <div class="row">
+        <span class="l">Dif. EF:</span>
+        <span class="v ${difEf < 0 ? 'neg' : 'pos'}">${fmt(difEf)} Bs</span>
+      </div>
+
+      <div class="sep"></div>
+
+      ${line('QR sistema:', `${fmt(qrSistema)} Bs`)}
+      ${line('QR contado:', `${fmt(qrContado)} Bs`)}
+      <div class="row">
+        <span class="l">Dif. QR:</span>
+        <span class="v ${difQr < 0 ? 'neg' : 'pos'}">${fmt(difQr)} Bs</span>
+      </div>
+    </div>
+  `
+
+    const html = `
+    <style>
+      *{ box-sizing:border-box; margin:0; padding:0; }
+      body{ font-family: Arial, sans-serif; font-size:11px; }
+      .ticket{ width:7.2cm; padding:4px 6px; }
+      .center{ text-align:center; }
+      .logo img{ max-width:80px; display:block; margin:0 auto 3px auto; }
+      .title{ font-size:14px; font-weight:bold; }
+      .sub{ font-size:10px; }
+      .dash{ border-top:1px dashed #000; margin:6px 0; }
+      .sep{ border-top:1px solid #000; margin:4px 0; opacity:.25; }
+      .row{ display:flex; justify-content:space-between; margin-top:2px; }
+      .l{ font-weight:bold; }
+      .v{ text-align:right; }
+      .user-title{ font-size:12px; font-weight:bold; text-align:center; margin-top:4px; }
+      .neg{ color:red; font-weight:bold; }
+      .pos{ color:green; font-weight:bold; }
+      .note{ margin-top:4px; font-size:9px; text-align:center; }
+    </style>
+
+    <div class="ticket">
+      <div class="logo"><img src="${logo}" alt="logo"></div>
+
+      <div class="center title">CIERRE DE CAJA</div>
+      <div class="center sub">Fecha: ${date}</div>
+
+      <div class="dash"></div>
+
+      ${line('TOTAL EFECTIVO:', `${fmt(resumen.efectivo)} Bs`)}
+      ${line('TOTAL QR:', `${fmt(resumen.qr)} Bs`)}
+
+      <div class="dash"></div>
+
+      ${bloque}
+
+      <div class="dash"></div>
+      <div class="note">Diferencia = contado - sistema</div>
+    </div>
+  `
+
+    const area = Imprimir._getArea()
+    area.innerHTML = html
+    new Printd().print(area)
+  }
+
   static reporteUltimoCierreUsuarios (data) {
     const logo = `${window.location.origin}/chicken-logo.png`
     const date = data?.date || ''
