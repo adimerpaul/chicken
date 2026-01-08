@@ -166,7 +166,12 @@
             <div class="col-6 col-md-2">
               <q-select v-model="client.llamada" label="Llamada" outlined dense :options="cantidades"/>
             </div>
-            <div class="col-12 col-md-10">
+            <div class="col-6 col-md-2">
+<!--              <q-select v-model="client.llamada" label="Llamada" outlined dense :options="cantidades"/>-->
+<!--              colocar si se colcoa en false colcoa sin llaju y se se marca que desaparesca-->
+              <q-checkbox v-model="llagua" label="Llagua" dense @update:model-value="client.comment = llagua ? client.comment.replace('SIN LLAGUA', '') : (client.comment + ' SIN LLAGUA')"/>
+            </div>
+            <div class="col-12 col-md-8">
               <q-input v-model="client.comment" label="Comentario" outlined dense />
             </div>
           </div>
@@ -205,6 +210,7 @@ export default {
     return {
       loading: false,
       products: [],
+      llagua: true,
       categories: [
         { id: 'Refrescos y Bebidas', name: 'Refrescos y Bebidas', icon: 'local_drink',  color: 'blue'   },
         { id: 'Acompañamientos',     name: 'Acompañamientos',     icon: 'restaurant',    color: 'teal'   },
