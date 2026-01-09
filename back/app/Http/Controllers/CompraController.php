@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Compra;
 use App\Models\CompraDetalle;
 use App\Models\Insumo;
+use App\Models\Venta;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -71,6 +73,44 @@ class CompraController extends Controller
             }
 
             $compra->update(['total' => $total]);
+
+//            $crear compra en venta
+//            $data = $request->validate([
+//                'name'    => ['required','string','max:180'],  // descripción del gasto
+//                'total'   => ['required','numeric','min:0.01'],
+//                'pago'    => ['nullable','string','max:40'],   // EFECTIVO | QR
+//                'comment' => ['nullable','string','max:500'],
+//            ]);
+//
+//            return DB::transaction(function () use ($data, $request) {
+            $data = [
+                    'name'    => 'Gasto por compra insumos ID '.$compra->id,
+                    'total'   => $total,
+                    'pago'    => 'EFECTIVO',
+                    'comment' => 'Gasto generado automáticamente al registrar compra de insumos ID '.$compra->id,
+            ];
+                $now  = Carbon::now();
+                $date = $now->toDateString();
+                $time = $now->toTimeString();
+
+                $numero = (int) (Venta::where('date', $date)->max('numero') ?? 0) + 1;
+//
+                $venta = Venta::create([
+                    'date'    => $date,
+                    'time'    => $time,
+                    'total'   => (float)$data['total'],
+                    'name'    => $data['name'], // descripción del gasto
+                    'user_id' => optional($request->user())->id,
+                    'client_id' => null,
+
+                    'type'    => 'EGRESO',
+                    'status'  => 'ACTIVO',
+                    'mesa'    => 'GASTO',
+                    'pago'    => $data['pago'] ?? 'EFECTIVO',
+                    'llamada' => null,
+                    'comment' => $data['comment'] ?? null,
+                    'numero'  => $numero,
+                ]);
 
             return Compra::with(['detalles.insumo'])->find($compra->id);
         });
