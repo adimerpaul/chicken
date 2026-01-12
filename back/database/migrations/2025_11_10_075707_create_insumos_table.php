@@ -19,6 +19,8 @@ return new class extends Migration
             $table->decimal('costo', 12, 2)->default(0); // costo unitario
             $table->decimal('min_stock', 12, 2)->nullable(); // stock mínimo (alertas)
             $table->text('descripcion')->nullable();
+//            ALTER TABLE insumos ADD COLUMN no_contar TINYINT(1) NOT NULL DEFAULT 0 AFTER descripcion;
+            $table->boolean('no_contar')->default(false); // no contar en stock disponible
             $table->timestamps();
             $table->softDeletes();
         });

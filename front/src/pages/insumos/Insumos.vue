@@ -122,6 +122,13 @@
           </q-input>
         </q-td>
       </template>
+<!--      no cpntra con check-->
+      <template v-slot:body-cell-no_contar="props">
+        <q-td :props="props">
+          <q-checkbox v-model="props.row.no_contar" :true-value="1" :false-value="0" @update:model-value="updateStock(props.row)"/>
+<!--          <pre>{{props.row.no_contar}}</pre>-->
+        </q-td>
+      </template>
     </q-table>
 
     <!-- Dialogo Crear/Editar -->
@@ -190,6 +197,7 @@ export default {
         { name: 'unidad',  label: 'Unidad',   align: 'left',  field: 'unidad', sortable: true },
         { name: 'stock',   label: 'Stock',    align: 'left',  field: 'stock',  sortable: true },
         { name: 'costo',   label: 'Costo (Bs)', align: 'left', field: 'costo', sortable: true },
+        { name: 'no_contar', label: 'No contar en stock', align: 'left', field: 'no_contar' },
         { name: 'min_stock', label: 'Mínimo', align: 'left', field: 'min_stock' },
         { name: 'descripcion', label: 'Descripción', align: 'left', field: 'descripcion' },
       ]
@@ -200,19 +208,19 @@ export default {
   },
   methods: {
     async updateStock (row) {
-      // evita llamadas si no hay id
       if (!row.id) return
 
       try {
-        // opcional: podrías poner un small flag row._updating = true
+        this.loading = true
         await this.$axios.put(`insumos/${row.id}`, {
-          stock: row.stock
+          stock: row.stock,
+          no_contar: row.no_contar ? 1 : 0
         })
-        this.$alert?.success?.('Stock actualizado')
+        this.$alert?.success?.('Actualizado')
       } catch (e) {
-        this.$alert?.error?.(e.response?.data?.message || 'No se pudo actualizar el stock')
+        this.$alert?.error?.(e.response?.data?.message || 'No se pudo actualizar')
       } finally {
-        // row._updating = false
+        this.loading = false
       }
     },
     formatMoney (v) {

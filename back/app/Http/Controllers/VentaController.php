@@ -54,19 +54,24 @@ class VentaController extends Controller
         $sale->status = 'ANULADO';
         $sale->save();
 
-        $insumosProductos = InsumoProducto::whereIn('producto_id', function($query) use ($sale) {
-            $query->select('product_id')
-                ->from('venta_detalles')
-                ->where('venta_id', $sale->id);
-        })->get();
+        $insumosProductos = InsumoProducto::join('insumos as i', 'i.id', '=', 'insumo_productos.insumo_id')
+            ->whereIn('insumo_productos.producto_id', function($query) use ($sale) {
+                $query->select('product_id')
+                    ->from('venta_detalles')
+                    ->where('venta_id', $sale->id);
+            })
+            ->where('i.no_contar', 0)
+            ->select('insumo_productos.*')
+            ->get();
 
         foreach ($insumosProductos as $ip) {
             $detalle = VentaDetalle::where('venta_id', $sale->id)
                 ->where('product_id', $ip->producto_id)
                 ->first();
+
             if ($detalle) {
                 \App\Models\Insumo::where('id', $ip->insumo_id)
-                    ->increment('stock', $ip->cantidad * $detalle->qty);
+                    ->increment('stock', $ip->cantidad * (float)$detalle->qty);
             }
         }
 
@@ -210,7 +215,12 @@ class VentaController extends Controller
                     'subtotal'   => $price * $qty,
                 ]);
 
-                $insumosProductos = InsumoProducto::where('producto_id', $item['id'])->get();
+                $insumosProductos = InsumoProducto::join('insumos as i', 'i.id', '=', 'insumo_productos.insumo_id')
+                    ->where('insumo_productos.producto_id', $item['id'])
+                    ->where('i.no_contar', 0)
+                    ->select('insumo_productos.*')
+                    ->get();
+
                 foreach ($insumosProductos as $ip) {
                     \App\Models\Insumo::where('id', $ip->insumo_id)
                         ->decrement('stock', $ip->cantidad * $qty);

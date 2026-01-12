@@ -150,12 +150,10 @@ class ReporteController extends Controller
             ->when($uid, fn ($qq) => $qq->where('v.user_id', $uid))
             ->where('v.type', 'INGRESO')
             ->where('v.status', '!=', 'ANULADO')
-            // >>> ignorar soft-deletes en todas las tablas relevantes
             ->whereNull('v.deleted_at')
             ->whereNull('d.deleted_at')
-            // si estas tablas tienen deleted_at:
-            // ->whereNull('ip.deleted_at')
-            ->whereNull('i.deleted_at');
+            ->whereNull('i.deleted_at')
+            ->where('i.no_contar', 0); // 👈 NO CONTAR
 
         $rows = $q->select(
             'i.id as insumo_id',
@@ -197,17 +195,68 @@ class ReporteController extends Controller
             ->whereNull('v.deleted_at') // >>> ignorar ventas soft-deleted
             ->sum('v.total');
 
+        $listaExacta = [
+            'Agua 600 ml',
+            'No retornable 500 ml',
+            'Retornable 1 Litro',
+            'Retornable 1,5 Litros',
+            'No retornable 2 litros',
+            'Acuarius 2 litros',
+            'Del Valle 2 litros',
+            'Pollo (presa)',
+            'Papa (por costo)',
+            'Arroz (Por Costo)',
+        ];
+
+        $rows_filtrados = (clone $q)
+            ->whereIn('i.nombre', $listaExacta)
+            ->select(
+                'i.id as insumo_id',
+                'i.nombre',
+                'i.unidad',
+                'i.costo',
+                'i.stock',
+                DB::raw('SUM(ip.cantidad * d.qty) as usado')
+            )
+            ->groupBy('i.id', 'i.nombre', 'i.unidad', 'i.costo', 'i.stock')
+            ->orderByRaw("FIELD(i.nombre, '".implode("','", $listaExacta)."')")
+            ->get();
+
+        $filtrado_costo_total = 0;
+        $filtrado_qty_usada   = 0;
+        $filtrado_stock_total = 0;
+
+        foreach ($rows_filtrados as $r) {
+            $r->usado        = (float)$r->usado;
+            $r->stock_actual = (float)$r->stock;
+            $r->total_cant   = $r->stock_actual + $r->usado;
+            $r->costo_total  = round(((float)$r->costo) * $r->usado, 2);
+
+            $filtrado_costo_total += $r->costo_total;
+            $filtrado_qty_usada   += $r->usado;
+            $filtrado_stock_total += $r->stock_actual;
+
+            unset($r->stock);
+        }
+
         return response()->json([
             'consumo' => $rows,
             'resumen' => [
-                // COSTOS
                 'costo_insumos'  => round($costo_total, 2),
                 'ingresos'       => round($ingresos, 2),
                 'ganancia_aprox' => round($ingresos - $costo_total, 2),
-                // CANTIDADES (almacén)
                 'cantidad_usada' => round($cantidad_usada_total, 2),
                 'stock_actual'   => round($stock_actual_total, 2),
                 'cantidad_total' => round($cantidad_usada_total + $stock_actual_total, 2),
+            ],
+
+            // 👇 NUEVO
+            'consumo_filtrado' => $rows_filtrados,
+            'resumen_filtrado' => [
+                'costo_insumos'  => round($filtrado_costo_total, 2),
+                'cantidad_usada' => round($filtrado_qty_usada, 2),
+                'stock_actual'   => round($filtrado_stock_total, 2),
+                'cantidad_total' => round($filtrado_qty_usada + $filtrado_stock_total, 2),
             ],
         ]);
     }

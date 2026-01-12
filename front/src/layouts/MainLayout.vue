@@ -140,14 +140,14 @@
 <!--        path: '/movimientos-almacen-insumos',-->
 <!--        component: () => import('pages/insumos/MovimientosAlmacenInsumosIndex.vue')-->
 <!--        },-->
-        <q-item dense to="/movimientos-almacen-insumos" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">
-          <q-item-section avatar>
-            <q-icon name="swap_horiz" class="text-white"/>
-          </q-item-section>
-          <q-item-section>
-            <q-item-label class="text-white">Movimientos de Insumos</q-item-label>
-          </q-item-section>
-        </q-item>
+<!--        <q-item dense to="/movimientos-almacen-insumos" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">-->
+<!--          <q-item-section avatar>-->
+<!--            <q-icon name="swap_horiz" class="text-white"/>-->
+<!--          </q-item-section>-->
+<!--          <q-item-section>-->
+<!--            <q-item-label class="text-white">Movimientos de Insumos</q-item-label>-->
+<!--          </q-item-section>-->
+<!--        </q-item>-->
 <!--        <q-item dense to="/almacenes" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Insumos')">-->
 <!--          <q-item-section avatar>-->
 <!--            <q-icon name="warehouse" class="text-white"/>-->
