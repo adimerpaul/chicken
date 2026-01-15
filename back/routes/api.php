@@ -92,6 +92,9 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::post('movimientos-almacen-insumos/report', [AlmacenInsumoMovimientoController::class, 'report']);
 
     Route::get('salesResumen', [SaleController::class, 'resumen']);
+
+    Route::get('salesResumenProductosMesa', [SaleController::class, 'resumenProductosMesa']);
+    Route::get('salesResumenProductosLlevar', [SaleController::class, 'resumenProductosLlevar']);
     Route::get('cierres-caja/reporte/ultimo', [CierreCajaController::class, 'reporteUltimo']);
     Route::post('gastos', [App\Http\Controllers\VentaController::class, 'storeGasto']);
     Route::get('reportes/ajuste-caja', [CajaAjusteController::class, 'index']);
