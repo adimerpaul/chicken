@@ -122,11 +122,19 @@
           </q-input>
         </q-td>
       </template>
-<!--      no cpntra con check-->
       <template v-slot:body-cell-no_contar="props">
         <q-td :props="props">
           <q-checkbox v-model="props.row.no_contar" :true-value="1" :false-value="0" @update:model-value="updateStock(props.row)"/>
-<!--          <pre>{{props.row.no_contar}}</pre>-->
+        </q-td>
+      </template>
+      <template v-slot:body-cell-es_mesa="props">
+        <q-td :props="props">
+          <q-checkbox v-model="props.row.es_mesa" :true-value="1" :false-value="0" @update:model-value="updateStock(props.row)"/>
+        </q-td>
+      </template>
+      <template v-slot:body-cell-es_llevar="props">
+        <q-td :props="props">
+          <q-checkbox v-model="props.row.es_llevar" :true-value="1" :false-value="0" @update:model-value="updateStock(props.row)"/>
         </q-td>
       </template>
     </q-table>
@@ -198,6 +206,8 @@ export default {
         { name: 'stock',   label: 'Stock',    align: 'left',  field: 'stock',  sortable: true },
         { name: 'costo',   label: 'Costo (Bs)', align: 'left', field: 'costo', sortable: true },
         { name: 'no_contar', label: 'No contar en stock', align: 'left', field: 'no_contar' },
+        { name: 'es_mesa', label: 'Es mesa', align: 'left', field: 'es_mesa' },
+        { name: 'es_llevar', label: 'Es llevar', align: 'left', field: 'es_llevar' },
         { name: 'min_stock', label: 'Mínimo', align: 'left', field: 'min_stock' },
         { name: 'descripcion', label: 'Descripción', align: 'left', field: 'descripcion' },
       ]
@@ -214,7 +224,9 @@ export default {
         this.loading = true
         await this.$axios.put(`insumos/${row.id}`, {
           stock: row.stock,
-          no_contar: row.no_contar ? 1 : 0
+          no_contar: row.no_contar ? 1 : 0,
+          es_mesa: row.es_mesa ? 1 : 0,
+          es_llevar: row.es_llevar ? 1 : 0
         })
         this.$alert?.success?.('Actualizado')
       } catch (e) {

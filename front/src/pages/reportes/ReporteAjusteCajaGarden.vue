@@ -71,52 +71,9 @@
         </div>
       </q-card-section>
     </q-card>
-
-    <!-- RESUMEN: dos tablas arriba -->
-    <div class="row q-col-gutter-sm">
+    <div class="row">
       <!-- INGRESOS POR DÍA (TOTAL) -->
-      <div class="col-12 col-md-7">
-        <q-card flat bordered class="card-like">
-          <q-card-section class="q-pa-none">
-            <div class="pdf-title blue">
-              <div class="pdf-title-left">INGRESOS (TOTAL POR DÍA)</div>
-            </div>
-
-            <div class="table-wrap blue">
-              <table class="pdf-table">
-                <thead>
-                <tr>
-                  <th class="th-center w-dia">DIA</th>
-                  <th class="th-left">fecha</th>
-                  <th class="th-right w-total">TOTAL</th>
-                </tr>
-                </thead>
-
-                <tbody>
-                <tr
-                  v-for="r in rows"
-                  :key="r.fecha"
-                  class="click-row"
-                  :class="{ active: selectedDay === r.fecha }"
-                  @click="selectDay(r.fecha)"
-                >
-                  <td class="td-center">{{ r.dia }}</td>
-                  <td class="td-left">{{ r.label }}</td>
-                  <td class="td-right td-bold">{{ numberNoDecimals(r.ingresos_total) }}</td>
-                </tr>
-
-                <tr v-if="!rows.length">
-                  <td colspan="3" class="td-center muted">Sin datos</td>
-                </tr>
-                </tbody>
-              </table>
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- DERECHA: EGRESOS POR DÍA + TOTALES -->
-      <div class="col-12 col-md-5">
+      <div class="col-12">
         <q-card flat bordered class="card-like q-mb-sm">
           <q-card-section class="q-pa-none">
             <div class="totales-box">
@@ -139,57 +96,8 @@
             </div>
           </q-card-section>
         </q-card>
-
-        <q-card flat bordered class="card-like">
-          <q-card-section class="q-pa-none">
-            <div class="pdf-title orange">
-              <div class="pdf-title-left">EGRESOS (TOTAL POR DÍA)</div>
-            </div>
-
-            <div class="table-wrap orange">
-              <table class="pdf-table">
-                <thead>
-                <tr>
-                  <th class="th-center w-dia">DIA</th>
-                  <th class="th-left">fecha</th>
-                  <th class="th-right w-total">TOTAL</th>
-                </tr>
-                </thead>
-
-                <tbody>
-                <tr
-                  v-for="r in rows"
-                  :key="r.fecha + '-e'"
-                  class="click-row"
-                  :class="{ active: selectedDay === r.fecha }"
-                  @click="selectDay(r.fecha)"
-                >
-                  <td class="td-center">{{ r.dia }}</td>
-                  <td class="td-left">{{ r.label }}</td>
-                  <td class="td-right td-bold">{{ numberNoDecimals(r.egresos_total) }}</td>
-                </tr>
-
-                <tr v-if="!rows.length">
-                  <td colspan="3" class="td-center muted">Sin datos</td>
-                </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- mini resumen del día seleccionado -->
-            <div v-if="selectedRow" class="day-chip">
-              <q-icon name="event" class="q-mr-xs" />
-              <span class="text-weight-bold">{{ selectedRow.label }}</span>
-              <span class="q-ml-sm">| Ingresos: <b>{{ money(selectedRow.ingresos_total) }}</b></span>
-              <span class="q-ml-sm">| Egresos: <b>{{ money(selectedRow.egresos_total) }}</b></span>
-              <span class="q-ml-sm">| En caja: <b>{{ money(selectedRow.en_caja) }}</b></span>
-            </div>
-          </q-card-section>
-        </q-card>
       </div>
     </div>
-
-    <!-- DESGLOSE ABAJITO -->
     <q-card flat bordered class="q-mt-sm card-like">
       <q-card-section class="row items-center q-col-gutter-sm">
         <div class="col">
@@ -258,6 +166,100 @@
         </div>
       </q-card-section>
     </q-card>
+
+    <!-- RESUMEN: dos tablas arriba -->
+    <div class="row q-col-gutter-sm">
+      <div class="col-12 col-md-7">
+        <q-card flat bordered class="card-like">
+          <q-card-section class="q-pa-none">
+            <div class="pdf-title blue">
+              <div class="pdf-title-left">INGRESOS (TOTAL POR DÍA)</div>
+            </div>
+
+            <div class="table-wrap blue">
+              <table class="pdf-table">
+                <thead>
+                <tr>
+                  <th class="th-center w-dia">DIA</th>
+                  <th class="th-left">fecha</th>
+                  <th class="th-right w-total">TOTAL</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr
+                  v-for="r in rows"
+                  :key="r.fecha"
+                  class="click-row"
+                  :class="{ active: selectedDay === r.fecha }"
+                  @click="selectDay(r.fecha)"
+                >
+                  <td class="td-center">{{ r.dia }}</td>
+                  <td class="td-left">{{ r.label }}</td>
+                  <td class="td-right td-bold">{{ numberNoDecimals(r.ingresos_total) }}</td>
+                </tr>
+
+                <tr v-if="!rows.length">
+                  <td colspan="3" class="td-center muted">Sin datos</td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
+
+      <!-- DERECHA: EGRESOS POR DÍA + TOTALES -->
+      <div class="col-12 col-md-5">
+
+        <q-card flat bordered class="card-like">
+          <q-card-section class="q-pa-none">
+            <div class="pdf-title orange">
+              <div class="pdf-title-left">EGRESOS (TOTAL POR DÍA)</div>
+            </div>
+
+            <div class="table-wrap orange">
+              <table class="pdf-table">
+                <thead>
+                <tr>
+                  <th class="th-center w-dia">DIA</th>
+                  <th class="th-left">fecha</th>
+                  <th class="th-right w-total">TOTAL</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr
+                  v-for="r in rows"
+                  :key="r.fecha + '-e'"
+                  class="click-row"
+                  :class="{ active: selectedDay === r.fecha }"
+                  @click="selectDay(r.fecha)"
+                >
+                  <td class="td-center">{{ r.dia }}</td>
+                  <td class="td-left">{{ r.label }}</td>
+                  <td class="td-right td-bold">{{ numberNoDecimals(r.egresos_total) }}</td>
+                </tr>
+
+                <tr v-if="!rows.length">
+                  <td colspan="3" class="td-center muted">Sin datos</td>
+                </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- mini resumen del día seleccionado -->
+            <div v-if="selectedRow" class="day-chip">
+              <q-icon name="event" class="q-mr-xs" />
+              <span class="text-weight-bold">{{ selectedRow.label }}</span>
+              <span class="q-ml-sm">| Ingresos: <b>{{ money(selectedRow.ingresos_total) }}</b></span>
+              <span class="q-ml-sm">| Egresos: <b>{{ money(selectedRow.egresos_total) }}</b></span>
+              <span class="q-ml-sm">| En caja: <b>{{ money(selectedRow.en_caja) }}</b></span>
+            </div>
+          </q-card-section>
+        </q-card>
+      </div>
+    </div>
 
     <q-inner-loading :showing="loading">
       <q-spinner size="40px" />
@@ -339,8 +341,8 @@ export default {
     },
 
     setWeek () {
-      const start = moment().startOf('isoWeek')
-      const end = moment().endOf('isoWeek')
+      const start = moment().startOf('month')
+      const end = moment().endOf('month')
       this.filters.date_from = start.format('YYYY-MM-DD')
       this.filters.date_to = end.format('YYYY-MM-DD')
       this.fetchData(false)
@@ -378,6 +380,9 @@ export default {
         this.totales = data.totales || this.totales
 
         this.selectedDay = this.rows?.[0]?.fecha || null
+        // selectDay del dia de hoy
+        const today = moment().format('YYYY-MM-DD')
+        this.selectDay(today)
       } catch (e) {
         this.$q.notify?.({
           type: 'negative',
