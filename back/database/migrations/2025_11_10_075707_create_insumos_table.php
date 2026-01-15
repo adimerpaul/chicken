@@ -21,6 +21,8 @@ return new class extends Migration
             $table->text('descripcion')->nullable();
 //            ALTER TABLE insumos ADD COLUMN no_contar TINYINT(1) NOT NULL DEFAULT 0 AFTER descripcion;
             $table->boolean('no_contar')->default(false); // no contar en stock disponible
+            $table->boolean('es_mesa')->default(false);
+            $table->boolean('es_llevar')->default(false);
             $table->timestamps();
             $table->softDeletes();
         });

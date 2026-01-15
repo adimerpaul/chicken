@@ -54,13 +54,18 @@ class VentaController extends Controller
         $sale->status = 'ANULADO';
         $sale->save();
 
-        $insumosProductos = InsumoProducto::join('insumos as i', 'i.id', '=', 'insumo_productos.insumo_id')
+        $insumosProductosQuery = InsumoProducto::join('insumos as i', 'i.id', '=', 'insumo_productos.insumo_id')
             ->whereIn('insumo_productos.producto_id', function($query) use ($sale) {
                 $query->select('product_id')
                     ->from('venta_detalles')
                     ->where('venta_id', $sale->id);
             })
-            ->where('i.no_contar', 0)
+            ->where('i.no_contar', 0);
+
+// ✅ filtra por MESA / LLEVAR de esa venta
+        $this->applyMesaFilter($insumosProductosQuery, $sale->mesa ?? 'MESA');
+
+        $insumosProductos = $insumosProductosQuery
             ->select('insumo_productos.*')
             ->get();
 
@@ -77,6 +82,25 @@ class VentaController extends Controller
 
         return response()->json(['message' => 'Venta anulada correctamente.']);
     }
+    private function applyMesaFilter($query, string $mesa)
+    {
+        $mesa = strtoupper(trim($mesa));
+
+        // Si usas más valores, ajusta aquí
+        if ($mesa === 'MESA') {
+            $query->where('i.es_mesa', 1);
+        } elseif ($mesa === 'LLEVAR') {
+            $query->where('i.es_llevar', 1);
+        } else {
+            // Si llega otro valor (DELIVERY, PEDIDOS YA, etc.)
+            // decide qué hacer: NO descontar o descontar ambos.
+            // Yo recomiendo: NO descontar, para evitar errores.
+            $query->whereRaw('1=0');
+        }
+
+        return $query;
+    }
+
 
     // GET /sales
     public function index(Request $request)
@@ -215,9 +239,16 @@ class VentaController extends Controller
                     'subtotal'   => $price * $qty,
                 ]);
 
-                $insumosProductos = InsumoProducto::join('insumos as i', 'i.id', '=', 'insumo_productos.insumo_id')
+                $mesaVenta = $data['mesa'] ?? 'MESA'; // o $venta->mesa después de crearla
+
+                $insumosProductosQuery = InsumoProducto::join('insumos as i', 'i.id', '=', 'insumo_productos.insumo_id')
                     ->where('insumo_productos.producto_id', $item['id'])
-                    ->where('i.no_contar', 0)
+                    ->where('i.no_contar', 0);
+
+// ✅ filtra por MESA / LLEVAR usando flags del insumo
+                $this->applyMesaFilter($insumosProductosQuery, $mesaVenta);
+
+                $insumosProductos = $insumosProductosQuery
                     ->select('insumo_productos.*')
                     ->get();
 

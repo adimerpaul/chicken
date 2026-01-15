@@ -17,6 +17,8 @@ class Insumo extends Model
         'min_stock',
         'descripcion',
         'no_contar',
+        'es_mesa',
+        'es_llevar',
     ];
     protected $hidden = [
         'created_at',
