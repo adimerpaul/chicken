@@ -17,6 +17,8 @@
     "apexcharts": "^5.3.6",
     "axios": "^1.2.1",
     "conversor-numero-a-letras-es-ar": "^1.0.3",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
     "moment": "^2.30.1",
     "pinia": "^3.0.1",
     "printd": "^1.6.0",

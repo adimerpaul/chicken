@@ -113,6 +113,22 @@
                   <q-item-section avatar><q-icon name="receipt_long" /></q-item-section>
                   <q-item-section>Ventas del usuario seleccionado</q-item-section>
                 </q-item>
+                <q-separator />
+
+                <q-item clickable @click="pdfResumenUsuarios" v-close-popup>
+                  <q-item-section avatar><q-icon name="picture_as_pdf" color="red" /></q-item-section>
+                  <q-item-section>Ventas por usuario (PDF)</q-item-section>
+                </q-item>
+
+                <q-item clickable @click="pdfProductosUsuarios" v-close-popup>
+                  <q-item-section avatar><q-icon name="picture_as_pdf" color="red" /></q-item-section>
+                  <q-item-section>Productos por usuario (PDF)</q-item-section>
+                </q-item>
+
+                <q-item clickable @click="pdfUltimoCierre" v-close-popup>
+                  <q-item-section avatar><q-icon name="picture_as_pdf" color="red" /></q-item-section>
+                  <q-item-section>Último cierre de caja (PDF)</q-item-section>
+                </q-item>
               </q-list>
             </q-btn-dropdown>
 
@@ -574,6 +590,7 @@
 <script>
 import { Imprimir } from 'src/utils/ImprimirTicket'
 import moment from 'moment'
+import { ReportesPDF } from 'src/utils/ReportesPDF'
 
 export default {
   name: 'VentasListado',
@@ -740,6 +757,47 @@ export default {
     }
   },
   methods: {
+    async pdfResumenUsuarios () {
+      try {
+        this.loading = true
+        const params = { ...this.filters }
+        const { data } = await this.$axios.get('sales/report/by-user', { params })
+        data.date_from = this.filters.date_from
+        data.date_to = this.filters.date_to
+        await ReportesPDF.ventasPorUsuario(data)
+      } catch (e) {
+        this.$q.notify?.({ type: 'negative', message: 'No se pudo generar el PDF' })
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async pdfProductosUsuarios () {
+      try {
+        this.loading = true
+        const params = { ...this.filters }
+        const { data } = await this.$axios.get('sales/report/by-user', { params })
+        data.date_from = this.filters.date_from
+        data.date_to = this.filters.date_to
+        await ReportesPDF.productosPorUsuario(data)
+      } catch (e) {
+        this.$q.notify?.({ type: 'negative', message: 'No se pudo generar el PDF' })
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async pdfUltimoCierre () {
+      try {
+        this.loading = true
+        const { data } = await this.$axios.get('cierres-caja/reporte/ultimo')
+        await ReportesPDF.cierreDiaUsuarios(data)
+      } catch (e) {
+        this.$q.notify?.({ type: 'negative', message: 'No hay cierres para generar PDF' })
+      } finally {
+        this.loading = false
+      }
+    },
     agregarGasto () {
       this.venta = { name: '', total: null, pago: 'EFECTIVO', comment: '' }
       this.dialogGasto = true
