@@ -7,6 +7,41 @@ use Illuminate\Support\Facades\DB;
 
 class ReporteController extends Controller
 {
+    // GET /api/reportes/productos-resumen?date_from=...&date_to=...
+    public function productosResumen(Request $request)
+    {
+        $df = $request->get('date_from');
+        $dt = $request->get('date_to');
+
+        // SOLO INGRESOS NO ANULADOS
+        $q = DB::table('ventas as v')
+            ->join('venta_detalles as d', 'd.venta_id', '=', 'v.id')
+            ->join('productos as p', 'p.id', '=', 'd.product_id')
+            ->when($df, fn($qq) => $qq->where('v.date', '>=', $df))
+            ->when($dt, fn($qq) => $qq->where('v.date', '<=', $dt))
+            ->whereNull('v.deleted_at')
+            ->whereNull('d.deleted_at')
+            ->whereNull('p.deleted_at')
+            ->where('v.type', 'INGRESO')
+            ->where('v.status', '!=', 'ANULADO')
+            // ✅ solo categorías que quieres
+            ->whereIn('p.categoria', ['Pollos', 'Refrescos y Bebidas'])
+            ->select(
+                'p.id as product_id',
+                'p.name',
+                'p.categoria',
+                'p.image',
+                DB::raw('SUM(d.qty) as qty'),
+                // si tu detalle no tiene price, cambia a SUM(d.subtotal)
+                DB::raw('SUM(d.qty * d.price) as total')
+            )
+            ->groupBy('p.id', 'p.name', 'p.categoria', 'p.image')
+            ->orderByDesc('total')
+            ->get();
+
+        return response()->json($q);
+    }
+
     // GET /api/reportes/ventas?date_from=YYYY-MM-DD&date_to=YYYY-MM-DD&user_id=...
     public function ventas(Request $request)
     {
