@@ -399,14 +399,14 @@
 
         <q-card-section>
           <div class="q-pa-sm">
-            <q-input
-              v-model="cierre.date"
-              type="date"
-              label="Fecha"
-              outlined
-              dense
-              class="q-mb-sm"
-            />
+<!--            <q-input-->
+<!--              v-model="cierre.date"-->
+<!--              type="date"-->
+<!--              label="Fecha"-->
+<!--              outlined-->
+<!--              dense-->
+<!--              class="q-mb-sm"-->
+<!--            />-->
 
             <q-input
               v-model.number="cierre.monto_efectivo"
