@@ -284,7 +284,8 @@
 
                   <q-item
                     clickable
-                    v-if="props.row.status === 'ACTIVO'"
+                    solo so puede anular del dia de hoy
+                    v-if="props.row.status === 'ACTIVO' && moment(props.row.date).isSame(moment(), 'day')"
                     @click="anularVenta(props.row)"
                     v-close-popup
                   >
@@ -597,6 +598,7 @@ export default {
   data () {
     return {
       dialogCierre: false,
+      moment: moment,
       cierre: {
         date: moment().format('YYYY-MM-DD'),
         // 👇 ya NO usamos user_id en el front
@@ -999,10 +1001,10 @@ export default {
       }).onOk(() => {
         this.loading = true
         this.$axios.post(`sales/${row.id}/anular`).then(() => {
-          this.$q.notify?.({ type: 'positive', message: 'Venta anulada' })
+          this.$alert.success('Venta anulada correctamente')
           this.fetchSales()
-        }).catch(() => {
-          this.$q.notify?.({ type: 'negative', message: 'Error al anular venta' })
+        }).catch((err) => {
+          this.$alert.error(err.response?.data?.message || 'No se pudo anular la venta')
         }).finally(() => {
           this.loading = false
         })
