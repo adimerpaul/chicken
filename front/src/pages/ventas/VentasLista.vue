@@ -147,7 +147,16 @@
               label="Gastos"
               no-caps
               class="q-mr-sm"
-              @click="agregarGasto"
+              @click="agregarGasto()"
+            />
+<!--            btn ingresos-->
+            <q-btn
+              color="teal"
+              icon="attach_money"
+              label="Ingresos"
+              no-caps
+              class="q-mr-sm"
+              @click="agregarIngreso()"
             />
             <q-btn
               color="blue"
@@ -582,6 +591,59 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+    <q-dialog v-model="dialogIngreso" persistent>
+      <q-card style="width: 420px; max-width: 95vw">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1 text-bold">Agregar Ingreso</div>
+          <q-space />
+          <q-btn flat round dense icon="close" @click="dialogIngreso = false" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-sm">
+          <q-input
+            v-model="ingreso.name"
+            label="Descripción"
+            outlined
+            dense
+            class="q-mb-sm"
+          />
+
+          <q-input
+            v-model.number="ingreso.total"
+            label="Monto (Bs)"
+            type="number"
+            step="0.01"
+            outlined
+            dense
+            class="q-mb-sm"
+          />
+
+          <q-select
+            v-model="ingreso.pago"
+            label="Pago"
+            outlined
+            dense
+            :options="['EFECTIVO','QR']"
+            class="q-mb-sm"
+          />
+
+          <q-input
+            v-model="ingreso.comment"
+            label="Comentario (opcional)"
+            outlined
+            dense
+            type="textarea"
+            autogrow
+            class="q-mb-sm"
+          />
+
+          <div class="text-right">
+            <q-btn flat label="Cancelar" color="grey-8" no-caps class="q-mr-sm" @click="dialogIngreso=false"/>
+            <q-btn label="Guardar e imprimir" color="primary" no-caps @click="guardarIngreso" :loading="loading" />
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
 
 
     <div id="myelement" class="hidden"></div>
@@ -607,6 +669,8 @@ export default {
         observacion: ''
       },
       dialogCaja: false,
+      dialogIngreso: false,
+      ingreso: { name: '', total: null, pago: 'EFECTIVO', comment: '' },
       caja: {
         name: 'Inicio de Caja',
         total: 0
@@ -759,6 +823,44 @@ export default {
     }
   },
   methods: {
+    async guardarIngreso() {
+      if (!this.ingreso?.name || !this.ingreso?.total || Number(this.ingreso.total) <= 0) {
+        this.$q.notify?.({ type: 'negative', message: 'Ingrese descripción y monto válido' })
+        return
+      }
+
+      this.loading = true
+      // try {
+        const payload = {
+          name: this.ingreso.name,
+          total: Number(this.ingreso.total),
+          pago: this.ingreso.pago || 'EFECTIVO',
+          comment: this.ingreso.comment || null
+        }
+
+        const { data } = await this.$axios.post('ingresos', payload)
+
+        this.$q.notify?.({ type: 'positive', message: 'Ingreso registrado' })
+        this.dialogIngreso = false
+
+        // ✅ imprimir
+        Imprimir.ingreso(data) // <-- lo añadimos abajo en tu ImprimirTicket
+
+        // limpiar
+        this.ingreso = { name: '', total: null, pago: 'EFECTIVO', comment: '' }
+
+        // refrescar lista
+        this.fetchSales()
+      // }
+      // catch (e) {
+      //   this.$q.notify?.({
+      //     type: 'negative',
+      //     message: e?.response?.data?.message || 'Error al guardar ingreso'
+      //   })
+      // } finally {
+      //   this.loading = false
+      // }
+    },
     async pdfResumenUsuarios () {
       try {
         this.loading = true
@@ -799,6 +901,10 @@ export default {
       } finally {
         this.loading = false
       }
+    },
+    agregarIngreso() {
+      this.ingreso = { name: '', total: null, pago: 'EFECTIVO', comment: '' }
+      this.dialogIngreso = true
     },
     agregarGasto () {
       this.venta = { name: '', total: null, pago: 'EFECTIVO', comment: '' }
@@ -1049,9 +1155,9 @@ export default {
       // manejamos paginación con meta del backend
     },
 
-    agregarGasto () {
-      this.dialogGasto = true
-    },
+    // agregarGasto () {
+    //   this.dialogGasto = true
+    // },
 
     async verIngresosHoy () {
       try {

@@ -819,5 +819,41 @@ export class Imprimir {
     w.print()
     w.close()
   }
+  static ingreso(v) {
+    const fecha = `${v.date || ''} ${String(v.time || '').substring(0, 8)}`
+    const total = Number(v.total || 0).toLocaleString('es-BO', {minimumFractionDigits: 2})
+
+    const html = `
+      <div style="font-family: Arial; font-size: 12px; width: 280px;">
+        <div style="text-align:center; font-weight:700; font-size:14px;">INGRESO</div>
+        <div style="text-align:center; margin-top:4px;">Nro: <b>${v.numero ?? ''}</b></div>
+        <div style="text-align:center; margin-top:2px;">${fecha}</div>
+        <hr/>
+        <div><b>Descripción:</b> ${v.name || ''}</div>
+        ${v.comment ? `<div style="margin-top:4px;"><b>Comentario:</b> ${v.comment}</div>` : ''}
+        <div style="margin-top:4px;"><b>Pago:</b> ${v.pago || 'EFECTIVO'}</div>
+        <hr/>
+        <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:700;">
+          <div>TOTAL</div>
+          <div>${total} Bs</div>
+        </div>
+        <div style="margin-top:6px; text-align:center; font-size:11px;">
+          Usuario: ${v.user?.name || '—'}
+        </div>
+      </div>
+    `
+
+    const el = document.getElementById('myelement')
+    if (el) el.innerHTML = html
+
+    // Si tu ImprimirTicket ya usa printJS / window.print, usa lo mismo que ya tienes:
+    // Aquí te dejo un fallback:
+    const w = window.open('', 'PRINT', 'height=600,width=400')
+    w.document.write(`<html><head><title>Ingreso</title></head><body>${html}</body></html>`)
+    w.document.close()
+    w.focus()
+    w.print()
+    w.close()
+  }
 
 }
