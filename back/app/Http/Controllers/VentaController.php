@@ -51,6 +51,11 @@ class VentaController extends Controller
     }
     function anular(Venta $sale)
     {
+//        solo se puede anular del ida
+        $now = Carbon::now();
+        if ($sale->date !== $now->toDateString()) {
+            return response()->json(['message' => 'Solo se pueden anular ventas del día actual.'], 400);
+        }
         $sale->status = 'ANULADO';
         $sale->save();
 
