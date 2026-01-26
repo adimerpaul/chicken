@@ -64,11 +64,21 @@
                   <q-item-label class="text-bold">{{ it.nombre }}</q-item-label>
                   <q-item-label caption>
                     <div class="row q-col-gutter-xs">
-                      <div class="col-6">
-                        <q-input v-model.number="it.cantidad" type="number" step="0.01" dense outlined label="Cantidad"/>
+                      <div class="col-4">
+                        <q-input v-model.number="it.cantidad" type="number" step="0.01" dense outlined label="Cantidad"
+                                 @update:model-value="it.subtotal = it.cantidad * it.costo"
+                        />
                       </div>
-                      <div class="col-6">
-                        <q-input v-model.number="it.costo" type="number" step="0.01" dense outlined label="Costo (Bs)"/>
+                      <div class="col-4">
+                        <q-input v-model.number="it.costo" type="number" step="0.01" dense outlined label="Costo (Bs)"
+                                  @update:model-value="it.subtotal = it.cantidad * it.costo"
+                        />
+                      </div>
+                      <div class="col-4">
+                        <q-input v-model.number="it.subtotal" type="number" step="0.01" dense outlined label="Subtotal (Bs)"
+                                  @update:model-value="it.costo = it.subtotal / it.cantidad"
+                        />
+
                       </div>
                     </div>
                   </q-item-label>
