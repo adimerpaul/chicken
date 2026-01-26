@@ -34,7 +34,7 @@
                   <div class="col-8">
                     <div class="text-body1">{{ insumo.nombre }}</div>
                     <div class="text-caption text-grey">
-                      {{ insumo.unidad }} — {{ insumo.descripcion || '—' }}
+                      {{ insumo.unidad }} — {{ insumo.costo || '—' }}
                     </div>
                   </div>
                   <div class="col-4 text-right">
@@ -66,17 +66,17 @@
                     <div class="row q-col-gutter-xs">
                       <div class="col-4">
                         <q-input v-model.number="it.cantidad" type="number" step="0.01" dense outlined label="Cantidad"
-                                 @update:model-value="it.subtotal = it.cantidad * it.costo"
+                                 @update:model-value="it.subtotal = (it.cantidad * it.costo).toFixed(2)"
                         />
                       </div>
                       <div class="col-4">
                         <q-input v-model.number="it.costo" type="number" step="0.01" dense outlined label="Costo (Bs)"
-                                  @update:model-value="it.subtotal = it.cantidad * it.costo"
+                                  @update:model-value="it.subtotal = (it.cantidad * it.costo).toFixed(2)"
                         />
                       </div>
                       <div class="col-4">
                         <q-input v-model.number="it.subtotal" type="number" step="0.01" dense outlined label="Subtotal (Bs)"
-                                  @update:model-value="it.costo = it.subtotal / it.cantidad"
+                                  @update:model-value="it.costo = (it.subtotal / it.cantidad).toFixed(2)"
                         />
 
                       </div>
@@ -251,6 +251,7 @@ export default {
           id: this.current.id,
           nombre: this.current.nombre,
           unidad: this.current.unidad,
+          subtotal: cant * cost,
           cantidad: cant,
           costo: cost
         })

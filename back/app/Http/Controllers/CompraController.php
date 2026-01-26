@@ -70,6 +70,23 @@ class CompraController extends Controller
                 // (opcional) actualizar último costo:
                 $insumo->costo = $costo;
                 $insumo->save();
+
+                Venta::create([
+                    'date'    => date('Y-m-d'),
+                    'time'    => date('H:i:s'),
+                    'total'   => $subtotal,
+                    'name'    => 'Gasto por compra insumo '.$insumo->nombre.' (ID '.$compra->id.')',
+                    'user_id' => optional($request->user())->id,
+                    'client_id' => null,
+
+                    'type'    => 'EGRESO',
+                    'status'  => 'ACTIVO',
+                    'mesa'    => 'GASTO',
+                    'pago'    => $data['pago'] ?? 'EFECTIVO',
+                    'llamada' => null,
+                    'comment' => $data['comment'] ?? null,
+                    'numero'  => 0,
+                ]);
             }
 
             $compra->update(['total' => $total]);
@@ -83,34 +100,34 @@ class CompraController extends Controller
 //            ]);
 //
 //            return DB::transaction(function () use ($data, $request) {
-            $data = [
-                    'name'    => 'Gasto por compra insumos ID '.$compra->id,
-                    'total'   => $total,
-                    'pago'    => 'EFECTIVO',
-                    'comment' => 'Gasto generado automáticamente al registrar compra de insumos ID '.$compra->id,
-            ];
-                $now  = Carbon::now();
-                $date = $now->toDateString();
-                $time = $now->toTimeString();
-
-                $numero = (int) (Venta::where('date', $date)->max('numero') ?? 0) + 1;
+//            $data = [
+//                    'name'    => 'Gasto por compra insumos ID '.$compra->id,
+//                    'total'   => $total,
+//                    'pago'    => 'EFECTIVO',
+//                    'comment' => 'Gasto generado automáticamente al registrar compra de insumos ID '.$compra->id,
+//            ];
+//                $now  = Carbon::now();
+//                $date = $now->toDateString();
+//                $time = $now->toTimeString();
 //
-                $venta = Venta::create([
-                    'date'    => $date,
-                    'time'    => $time,
-                    'total'   => (float)$data['total'],
-                    'name'    => $data['name'], // descripción del gasto
-                    'user_id' => optional($request->user())->id,
-                    'client_id' => null,
-
-                    'type'    => 'EGRESO',
-                    'status'  => 'ACTIVO',
-                    'mesa'    => 'GASTO',
-                    'pago'    => $data['pago'] ?? 'EFECTIVO',
-                    'llamada' => null,
-                    'comment' => $data['comment'] ?? null,
-                    'numero'  => $numero,
-                ]);
+//                $numero = (int) (Venta::where('date', $date)->max('numero') ?? 0) + 1;
+////
+//                $venta = Venta::create([
+//                    'date'    => $date,
+//                    'time'    => $time,
+//                    'total'   => (float)$data['total'],
+//                    'name'    => $data['name'], // descripción del gasto
+//                    'user_id' => optional($request->user())->id,
+//                    'client_id' => null,
+//
+//                    'type'    => 'EGRESO',
+//                    'status'  => 'ACTIVO',
+//                    'mesa'    => 'GASTO',
+//                    'pago'    => $data['pago'] ?? 'EFECTIVO',
+//                    'llamada' => null,
+//                    'comment' => $data['comment'] ?? null,
+//                    'numero'  => $numero,
+//                ]);
 
             return Compra::with(['detalles.insumo'])->find($compra->id);
         });

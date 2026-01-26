@@ -193,7 +193,6 @@
 
     <!-- RESUMEN SOLO ADMIN -->
 <!--    <template >-->
-      bb
       <div class="row q-col-gutter-sm q-mt-sm" v-if="$store.user.role === 'Administrador'">
         <div class="col-12 col-sm-3">
           <q-card flat bordered>
