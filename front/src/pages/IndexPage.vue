@@ -98,7 +98,7 @@
 
     <!-- KPIs -->
     <div class="row q-col-gutter-md q-mb-md" v-if="$store.user.role=='Administrador'">
-      <div class="col-12 col-sm-6 col-md-3">
+      <div class="col-12 col-sm-6 col-md-4">
         <q-card flat bordered class="kpi kpi-green">
           <q-card-section>
             <div class="text-caption text-positive">Ingresos</div>
@@ -109,7 +109,7 @@
         </q-card>
       </div>
 
-      <div class="col-12 col-sm-6 col-md-3">
+      <div class="col-12 col-sm-6 col-md-4">
         <q-card flat bordered class="kpi kpi-red">
           <q-card-section>
             <div class="text-caption text-negative">Egresos</div>
@@ -120,21 +120,21 @@
         </q-card>
       </div>
 
-      <div class="col-12 col-sm-6 col-md-3">
-        <q-card flat bordered class="kpi kpi-indigo">
-          <q-card-section>
-            <div class="text-caption">Neto</div>
-            <div class="text-h5 text-weight-bold">
-              {{ money(kpis.neto) }} Bs
-            </div>
-            <div class="text-caption text-grey">
-              Ticket prom.: {{ money(kpis.ticket_promedio) }} Bs
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
+<!--      <div class="col-12 col-sm-6 col-md-4">-->
+<!--        <q-card flat bordered class="kpi kpi-indigo">-->
+<!--          <q-card-section>-->
+<!--            <div class="text-caption">Neto</div>-->
+<!--            <div class="text-h5 text-weight-bold">-->
+<!--              {{ money(kpis.neto) }} Bs-->
+<!--            </div>-->
+<!--            <div class="text-caption text-grey">-->
+<!--              Ticket prom.: {{ money(kpis.ticket_promedio) }} Bs-->
+<!--            </div>-->
+<!--          </q-card-section>-->
+<!--        </q-card>-->
+<!--      </div>-->
 
-      <div class="col-12 col-sm-6 col-md-3">
+      <div class="col-12 col-sm-6 col-md-4">
         <q-card flat bordered class="kpi">
           <q-card-section>
             <div class="text-caption">Resumen de ventas</div>
@@ -561,13 +561,13 @@ export default {
       const categories = this.porDia.map(r => r.date)
       const ingresos = this.porDia.map(r => Number(r.ingreso || 0))
       const egresos = this.porDia.map(r => Number(r.egreso || 0))
-      const neto = this.porDia.map(r => Number(r.neto || 0))
+      // const neto = this.porDia.map(r => Number(r.neto || 0)) // ✅ oculto
 
       this.chartVentas = {
         series: [
           { name: 'Ingresos', data: ingresos },
           { name: 'Egresos', data: egresos },
-          { name: 'Neto', data: neto }
+          // { name: 'Neto', data: neto } // ✅ oculto
         ],
         options: {
           chart: { type: 'bar', toolbar: { show: false } },

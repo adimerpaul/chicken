@@ -110,15 +110,17 @@
           >
 <!--            @blur="updateStock(props.row)"-->
 <!--            @keyup.enter="updateStock(props.row)"-->
-            <template #append>
-              <q-chip
-                dense
-                :color="props.row.min_stock && Number(props.row.stock) <= Number(props.row.min_stock) ? 'negative' : 'primary'"
-                text-color="white"
-              >
-                {{ props.row.unidad }}
-              </q-chip>
-            </template>
+<!--            <template #append>-->
+<!--              <q-chip-->
+<!--                dense-->
+<!--                :color="props.row.min_stock && Number(props.row.stock) <= Number(props.row.min_stock) ? 'negative' : 'primary'"-->
+<!--                text-color="white"-->
+<!--                size="10px"-->
+<!--                class="q-pa-none"-->
+<!--              >-->
+<!--                {{ props.row.unidad }}-->
+<!--              </q-chip>-->
+<!--            </template>-->
           </q-input>
         </q-td>
       </template>
