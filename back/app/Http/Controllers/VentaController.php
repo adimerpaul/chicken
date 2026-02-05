@@ -128,20 +128,29 @@ class VentaController extends Controller
     {
         $mesa = strtoupper(trim($mesa));
 
-        // Si usas más valores, ajusta aquí
         if ($mesa === 'MESA') {
-            $query->where('i.es_mesa', 1);
+            // Mesa o "sin restricción" (ambos flags 0)
+            $query->where(function ($w) {
+                $w->where('i.es_mesa', 1)
+                    ->orWhere(function ($w2) {
+                        $w2->where('i.es_mesa', 0)->where('i.es_llevar', 0);
+                    });
+            });
         } elseif ($mesa === 'LLEVAR') {
-            $query->where('i.es_llevar', 1);
+            // Llevar o "sin restricción" (ambos flags 0)
+            $query->where(function ($w) {
+                $w->where('i.es_llevar', 1)
+                    ->orWhere(function ($w2) {
+                        $w2->where('i.es_mesa', 0)->where('i.es_llevar', 0);
+                    });
+            });
         } else {
-            // Si llega otro valor (DELIVERY, PEDIDOS YA, etc.)
-            // decide qué hacer: NO descontar o descontar ambos.
-            // Yo recomiendo: NO descontar, para evitar errores.
-            $query->whereRaw('1=0');
+            $query->whereRaw('1=0'); // no descontar otros tipos
         }
 
         return $query;
     }
+
 
 
     // GET /sales
