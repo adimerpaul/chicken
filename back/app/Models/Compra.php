@@ -10,7 +10,7 @@ class Compra extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'fecha', 'proveedor', 'total', 'estado', 'nota'
+        'fecha', 'proveedor', 'total', 'estado', 'nota', 'pago'
     ];
 
     protected $hidden = ['deleted_at', 'updated_at','created_at'];

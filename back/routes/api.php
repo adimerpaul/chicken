@@ -12,6 +12,7 @@ use App\Http\Controllers\VentaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CajaAjusteController;
+use App\Http\Controllers\ProveedorController;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -40,6 +41,9 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'show']);
     Route::put('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'update']);
     Route::delete('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'destroy']);
+
+    Route::get('/proveedores', [ProveedorController::class, 'index']);
+    Route::post('/proveedores', [ProveedorController::class, 'store']);
 
     Route::apiResource('compras', CompraController::class);
     Route::put('compras/{compra}/anular', [CompraController::class, 'anular']);

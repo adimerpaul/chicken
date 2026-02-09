@@ -33,6 +33,7 @@ class CompraController extends Controller
         // {
         //   "fecha":"2025-11-10",
         //   "proveedor":"Fulano",
+        //   "pago":"EFECTIVO", // EFECTIVO | QR
         //   "nota":"opc",
         //   "detalles":[
         //     {"insumo_id":1,"cantidad":5,"costo":12.5},
@@ -41,10 +42,16 @@ class CompraController extends Controller
         // }
 
         return DB::transaction(function () use ($request) {
+            $pago = strtoupper((string) $request->input('pago', 'EFECTIVO'));
+            if (!in_array($pago, ['EFECTIVO', 'QR'], true)) {
+                return response()->json(['message' => 'Método de pago inválido'], 422);
+            }
+
             $compra = Compra::create([
                 'fecha'     => $request->input('fecha', now()->toDateString()),
                 'proveedor' => $request->input('proveedor'),
                 'nota'      => $request->input('nota'),
+                'pago'      => $pago,
                 'total'     => 0, // se calcula abajo
                 'estado'    => 'ACTIVO',
             ]);
@@ -82,9 +89,9 @@ class CompraController extends Controller
                     'type'    => 'EGRESO',
                     'status'  => 'ACTIVO',
                     'mesa'    => 'GASTO',
-                    'pago'    => $data['pago'] ?? 'EFECTIVO',
+                    'pago'    => $pago,
                     'llamada' => null,
-                    'comment' => $data['comment'] ?? null,
+                    'comment' => null,
                     'numero'  => 0,
                 ]);
             }
