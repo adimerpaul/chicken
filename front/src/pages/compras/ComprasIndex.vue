@@ -95,6 +95,7 @@
                 <th>#</th>
                 <th>Fecha</th>
                 <th>Proveedor</th>
+                <th>Pago</th>
                 <th>Ítems</th>
                 <th>Total</th>
                 <th>Estado</th>
@@ -106,6 +107,7 @@
                 <td>{{ c.id }}</td>
                 <td>{{ c.fecha }}</td>
                 <td>{{ c.proveedor || '—' }}</td>
+                <td>{{ c.pago || 'EFECTIVO' }}</td>
                 <td class="text-right">{{ c.detalles_count }}</td>
                 <td class="text-right text-bold">{{ money(c.total) }}</td>
                 <td>
@@ -129,7 +131,7 @@
               </tbody>
               <tbody v-else>
               <tr>
-                <td colspan="7" class="text-center">Sin compras</td>
+                <td colspan="8" class="text-center">Sin compras</td>
               </tr>
               </tbody>
             </q-markup-table>
@@ -151,6 +153,7 @@
           <div class="q-mb-sm">
             <div><b>Fecha:</b> {{ compra ? compra.fecha : '' }}</div>
             <div><b>Proveedor:</b> {{ (compra && compra.proveedor) ? compra.proveedor : '—' }}</div>
+            <div><b>Pago:</b> {{ (compra && compra.pago) ? compra.pago : 'EFECTIVO' }}</div>
             <div><b>Estado:</b> {{ compra ? compra.estado : '' }}</div>
             <div><b>Nota:</b> {{ (compra && compra.nota) ? compra.nota : '—' }}</div>
           </div>
@@ -262,11 +265,12 @@ export default {
         })
     },
     exportCSV () {
-      const header = ['ID', 'Fecha', 'Proveedor', 'Items', 'Total', 'Estado']
+      const header = ['ID', 'Fecha', 'Proveedor', 'Pago', 'Items', 'Total', 'Estado']
       const lines = this.rows.map(r => [
         r.id,
         r.fecha,
         (r.proveedor || ''),
+        (r.pago || 'EFECTIVO'),
         r.detalles_count,
         r.total,
         r.estado

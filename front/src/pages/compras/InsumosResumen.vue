@@ -148,7 +148,44 @@
               <q-input v-model="compra.fecha" label="Fecha" type="date" dense outlined/>
             </div>
             <div class="col-12 col-sm-6">
-              <q-input v-model="compra.proveedor" label="Proveedor" dense outlined/>
+              <div class="row items-center q-col-gutter-sm">
+                <div class="col">
+                  <q-select
+                    v-model="compra.proveedor"
+                    label="Proveedor"
+                    :options="proveedorOptions"
+                    dense
+                    outlined
+                    emit-value
+                    map-options
+                    use-input
+                    fill-input
+                    hide-selected
+                    input-debounce="0"
+                    @filter="filterProveedores"
+                  />
+                </div>
+                <div class="col-auto">
+                  <q-btn
+                    color="primary"
+                    icon="add"
+                    round
+                    dense
+                    @click="openProveedorDialog"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-sm-6">
+              <q-select
+                v-model="compra.pago"
+                label="Método de pago"
+                :options="pagoOptions"
+                dense
+                outlined
+                emit-value
+                map-options
+              />
             </div>
             <div class="col-12">
               <q-input v-model="compra.nota" label="Nota" type="textarea" autogrow dense outlined/>
@@ -161,6 +198,24 @@
         <q-card-actions align="right">
           <q-btn flat color="negative" label="Cancelar" no-caps @click="payDlg=false"/>
           <q-btn color="positive" label="Guardar" no-caps :loading="loading" @click="savePurchase"/>
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- DIALOG: nuevo proveedor -->
+    <q-dialog v-model="proveedorDlg">
+      <q-card style="width: 420px; max-width: 90vw">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1">Nuevo proveedor</div>
+          <q-space/>
+          <q-btn flat round dense icon="close" @click="proveedorDlg=false"/>
+        </q-card-section>
+        <q-card-section class="q-pt-none">
+          <q-input v-model="proveedorNombre" label="Nombre" dense outlined/>
+        </q-card-section>
+        <q-card-actions align="right">
+          <q-btn flat label="Cancelar" color="negative" no-caps @click="proveedorDlg=false"/>
+          <q-btn color="primary" label="Guardar" no-caps :loading="loading" @click="saveProveedor"/>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -177,16 +232,28 @@ export default {
       search: '',
       insumos: [],
       carrito: [],
+      proveedores: [],
+      proveedoresFiltered: [],
       // dialog agregar
       qtyDlg: false,
       current: null,
       form: { cantidad: null, costo: null },
       // dialog pagar
       payDlg: false,
-      compra: { fecha: today, proveedor: '', nota: '' },
+      pagoOptions: [
+        { label: 'Efectivo', value: 'EFECTIVO' },
+        { label: 'QR', value: 'QR' }
+      ],
+      compra: { fecha: today, proveedor: '', nota: '', pago: 'EFECTIVO' },
+      proveedorDlg: false,
+      proveedorNombre: '',
     }
   },
   computed: {
+    proveedorOptions () {
+      const list = this.proveedoresFiltered.length ? this.proveedoresFiltered : this.proveedores
+      return list.map(p => ({ label: p.nombre, value: p.nombre }))
+    },
     filteredInsumos () {
       const q = (this.search || '').toLowerCase()
       if (!q) return this.insumos
@@ -206,6 +273,7 @@ export default {
   },
   mounted () {
     this.insumosGet()
+    this.proveedoresGet()
   },
   methods: {
     to2 (v) {
@@ -222,6 +290,55 @@ export default {
       } catch (e) {
         if (this.$alert && this.$alert.error) this.$alert.error('No se pudo cargar los insumos')
       } finally { this.loading = false }
+    },
+    async proveedoresGet () {
+      try {
+        const res = await this.$axios.get('proveedores')
+        this.proveedores = Array.isArray(res.data) ? res.data : []
+        this.proveedoresFiltered = []
+      } catch (e) {
+        if (this.$alert && this.$alert.error) this.$alert.error('No se pudo cargar proveedores')
+      }
+    },
+    filterProveedores (val, update) {
+      update(() => {
+        const q = (val || '').toLowerCase()
+        if (!q) {
+          this.proveedoresFiltered = []
+          return
+        }
+        this.proveedoresFiltered = this.proveedores.filter(p =>
+          String(p.nombre || '').toLowerCase().includes(q)
+        )
+      })
+    },
+    openProveedorDialog () {
+      this.proveedorNombre = ''
+      this.proveedorDlg = true
+    },
+    async saveProveedor () {
+      const nombre = String(this.proveedorNombre || '').trim()
+      if (!nombre) {
+        if (this.$alert && this.$alert.error) this.$alert.error('Ingrese un proveedor')
+        return
+      }
+      this.loading = true
+      try {
+        const res = await this.$axios.post('proveedores', { nombre })
+        const prov = res.data
+        if (prov && prov.nombre) {
+          this.compra.proveedor = prov.nombre
+        }
+        this.proveedorDlg = false
+        await this.proveedoresGet()
+      } catch (e) {
+        const msg = e && e.response && e.response.data && e.response.data.message
+          ? e.response.data.message
+          : 'No se pudo guardar proveedor'
+        if (this.$alert && this.$alert.error) this.$alert.error(msg)
+      } finally {
+        this.loading = false
+      }
     },
 
     openQtyDialog (insumo) {
@@ -281,6 +398,7 @@ export default {
         fecha: this.compra.fecha,
         proveedor: this.compra.proveedor || null,
         nota: this.compra.nota || null,
+        pago: this.compra.pago || 'EFECTIVO',
         detalles: this.carrito.map(it => ({
           insumo_id: it.id,
           cantidad: Number(it.cantidad || 0),
@@ -297,6 +415,7 @@ export default {
         this.carrito = []
         this.compra.proveedor = ''
         this.compra.nota = ''
+        this.compra.pago = 'EFECTIVO'
         // refrescar stocks si quieres
         this.insumosGet()
       } catch (e) {

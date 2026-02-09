@@ -157,7 +157,9 @@
               <q-input v-model="client.name" label="Nombre" outlined dense @update:model-value="toUpperName"/>
             </div>
             <div class="col-6 col-md-2">
-              <q-select v-model="client.mesa" label="Mesa" outlined dense :options="['MESA','LLEVAR']"/>
+<!--              PEDIDO YA Y DELYVERY-->
+
+              <q-select v-model="client.mesa" label="Mesa" outlined dense :options="['MESA','LLEVAR','DELIVERY','PEDIDO YA']"/>
             </div>
             <div class="col-6 col-md-2">
               <q-select v-model="client.pago" label="Pago" outlined dense :options="['EFECTIVO','QR']"/>
