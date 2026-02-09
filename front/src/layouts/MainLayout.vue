@@ -274,6 +274,14 @@
             <q-item-label class="text-white">Reportes</q-item-label>
           </q-item-section>
         </q-item>
+        <q-item dense to="/reportes-sistema" exact clickable class="menu-item" active-class="menu-active" v-close-popup v-if="canPermission('Reportes')">
+          <q-item-section avatar>
+            <q-icon name="analytics" class="text-white"/>
+          </q-item-section>
+          <q-item-section>
+            <q-item-label class="text-white">Reportes del Sistema</q-item-label>
+          </q-item-section>
+        </q-item>
 <!--        {-->
 <!--        path: '/reportes/ajuste-caja-garden',-->
 <!--        component: () => import('pages/reportes/ReporteAjusteCajaGarden.vue'),-->

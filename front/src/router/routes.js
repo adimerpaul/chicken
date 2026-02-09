@@ -41,6 +41,11 @@ const routes = [
         component: () => import('pages/reportes/Reportes.vue'),
         meta: { requiresAuth: true }
       },
+      {
+        path: '/reportes-sistema',
+        component: () => import('pages/reportes/ReportesSistema.vue'),
+        meta: { requiresAuth: true }
+      },
       // ReporteAjusteCajaGarden.vue
       {
         path: '/reportes/ajuste-caja-garden',

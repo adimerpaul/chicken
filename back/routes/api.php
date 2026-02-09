@@ -71,6 +71,7 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::get('reportes/productos-resumen', [ReporteController::class, 'productosResumen']);
 
     Route::get('reportes/insumos', [ReporteController::class, 'insumos']);
+    Route::get('reportes/insumos-sistema', [ReporteController::class, 'insumosSistema']);
 
     Route::post('cierres-caja', [CierreCajaController::class, 'store']);   // ya lo tenías
     Route::get('cierres-caja/{cierreCaja}', [CierreCajaController::class, 'show']); // ya lo tenías
