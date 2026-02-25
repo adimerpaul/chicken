@@ -71,6 +71,22 @@
 
           <div class="col-12 col-sm-8 text-right">
             <q-btn
+              color="teal"
+              icon="attach_money"
+              label="Ingresos"
+              no-caps
+              class="q-mr-sm"
+              @click="agregarIngreso()"
+            />
+            <q-btn
+              color="red"
+              icon="payments"
+              label="Gastos"
+              no-caps
+              class="q-mr-sm"
+              @click="agregarGasto()"
+            />
+            <q-btn
               color="orange"
               icon="lock"
               @click="abrirCierreCaja"
@@ -133,31 +149,17 @@
             </q-btn-dropdown>
 
             <!-- crear venta -->
-            <q-btn
-              color="green"
-              icon="add_shopping_cart"
-              :to="{ path: '/ventas' }"
-              label="Crear Venta"
-              no-caps
-              class="q-mr-sm"
-            />
-            <q-btn
-              color="red"
-              icon="payments"
-              label="Gastos"
-              no-caps
-              class="q-mr-sm"
-              @click="agregarGasto()"
-            />
+<!--            <q-btn-->
+<!--              color="green"-->
+<!--              icon="add_shopping_cart"-->
+<!--              :to="{ path: '/ventas' }"-->
+<!--              label="Crear Venta"-->
+<!--              no-caps-->
+<!--              class="q-mr-sm"-->
+<!--            />-->
+
 <!--            btn ingresos-->
-            <q-btn
-              color="teal"
-              icon="attach_money"
-              label="Ingresos"
-              no-caps
-              class="q-mr-sm"
-              @click="agregarIngreso()"
-            />
+
             <q-btn
               color="blue"
               icon="query_stats"
@@ -843,7 +845,7 @@ export default {
         this.dialogIngreso = false
 
         // ✅ imprimir
-        Imprimir.ingreso(data) // <-- lo añadimos abajo en tu ImprimirTicket
+        // Imprimir.ingreso(data) // <-- lo añadimos abajo en tu ImprimirTicket
 
         // limpiar
         this.ingreso = { name: '', total: null, pago: 'EFECTIVO', comment: '' }
@@ -930,7 +932,7 @@ export default {
         this.dialogGasto = false
 
         // ✅ imprimir
-        Imprimir.gasto(data) // <-- lo añadimos abajo en tu ImprimirTicket
+        // Imprimir.gasto(data) // <-- lo añadimos abajo en tu ImprimirTicket
 
         // limpiar
         this.venta = { name: '', total: null, pago: 'EFECTIVO', comment: '' }

@@ -117,9 +117,9 @@ export default {
       colsInsumos: [
         { name: 'nombre', label: 'Insumo', field: 'nombre', align: 'left' },
         { name: 'unidad', label: 'Unidad', field: 'unidad', align: 'left' },
-        { name: 'total_cant', label: 'Total', field: 'total_cant', align: 'right', format: v => Number(v || 0).toFixed(2) },
-        { name: 'usado', label: 'Cant. usada', field: 'usado', align: 'right', format: v => Number(v || 0).toFixed(2) },
+        // { name: 'total_cant', label: 'Total', field: 'total_cant', align: 'right', format: v => Number(v || 0).toFixed(2) },
         { name: 'stock_actual', label: 'Stock actual', field: 'stock_actual', align: 'right', format: v => Number(v || 0).toFixed(2) },
+        { name: 'usado', label: 'Cant. usada', field: 'usado', align: 'right', format: v => Number(v || 0).toFixed(2) },
         { name: 'costo_usado', label: 'Costo usado (Bs)', field: 'costo_usado', align: 'right', format: v => Number(v || 0).toFixed(2) },
         { name: 'costo_actual', label: 'Costo actual (Bs)', field: 'costo_actual', align: 'right', format: v => Number(v || 0).toFixed(2) }
       ]

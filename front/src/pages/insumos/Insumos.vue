@@ -104,7 +104,7 @@
             dense
             outlined
             step="0.01"
-            style="max-width: 150px"
+            style="width: 120px"
             @update:model-value="updateStock(props.row)"
             debounce="500"
           >
