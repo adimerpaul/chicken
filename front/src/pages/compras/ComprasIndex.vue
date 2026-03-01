@@ -3,7 +3,7 @@
     <q-card>
       <q-card-section class="q-pa-sm">
         <!-- Filtros -->
-        <div class="row items-end">
+        <div class="row items-end q-col-gutter-sm">
           <div class="col-12 col-md-3 q-pa-xs">
             <q-input v-model="f.ini" label="Fecha Inicio" type="date" outlined dense/>
           </div>
@@ -11,7 +11,17 @@
             <q-input v-model="f.fin" label="Fecha Fin" type="date" outlined dense/>
           </div>
           <div class="col-12 col-md-3 q-pa-xs">
-            <q-input v-model="f.q" label="Buscar (proveedor / nota / estado)" outlined dense clearable/>
+            <q-input
+              v-model="f.q"
+              label="Buscar proveedor / comentario / estado"
+              outlined
+              dense
+              clearable
+            >
+              <template v-slot:append>
+                <q-icon name="search" />
+              </template>
+            </q-input>
           </div>
           <div class="col-12 col-md-3 q-pa-xs text-right">
 <!--            http://localhost:9000/compras/insumos-->
@@ -89,26 +99,60 @@
         <!-- Tabla -->
         <div class="row q-mt-sm">
           <div class="col-12">
-            <q-markup-table dense wrap-cells>
+            <q-markup-table dense flat bordered wrap-cells>
               <thead class="bg-black text-white">
               <tr>
+                <th style="width: 130px;">Opciones</th>
                 <th>#</th>
                 <th>Fecha</th>
                 <th>Proveedor</th>
+                <th>Comentario</th>
                 <th>Pago</th>
-                <th>Ítems</th>
+                <th>Detalle</th>
                 <th>Total</th>
                 <th>Estado</th>
-                <th>Opciones</th>
               </tr>
               </thead>
               <tbody v-if="rows.length">
               <tr v-for="c in rows" :key="c.id">
+                <td>
+                  <q-btn-dropdown dense label="Opciones" no-caps size="xs" color="primary">
+                    <q-list>
+                      <q-item clickable @click="ver(c.id)" v-close-popup>
+                        <q-item-section avatar><q-icon name="visibility" /></q-item-section>
+                        <q-item-section>Ver detalle</q-item-section>
+                      </q-item>
+
+                      <q-item
+                        clickable
+                        v-if="c.estado === 'ACTIVO'"
+                        @click="anular(c.id)"
+                        v-close-popup
+                      >
+                        <q-item-section avatar><q-icon name="cancel" /></q-item-section>
+                        <q-item-section>Anular compra</q-item-section>
+                      </q-item>
+                    </q-list>
+                  </q-btn-dropdown>
+                </td>
                 <td>{{ c.id }}</td>
                 <td>{{ c.fecha }}</td>
                 <td>{{ c.proveedor || '—' }}</td>
-                <td>{{ c.pago || 'EFECTIVO' }}</td>
-                <td class="text-right">{{ c.detalles_count }}</td>
+                <td style="max-width: 280px;">
+                  <div class="ellipsis" :title="c.nota || '—'">
+                    {{ c.nota || '—' }}
+                  </div>
+                </td>
+                <td>
+                  <q-chip dense color="blue-grey-1" text-color="dark">
+                    {{ c.pago || 'EFECTIVO' }}
+                  </q-chip>
+                </td>
+                <td class="text-right">
+                  <q-chip dense color="grey-3" text-color="dark">
+                    {{ c.detalles_count }}
+                  </q-chip>
+                </td>
                 <td class="text-right text-bold">{{ money(c.total) }}</td>
                 <td>
                   <q-chip
@@ -119,19 +163,11 @@
                     {{ c.estado }}
                   </q-chip>
                 </td>
-                <td>
-                  <q-btn flat dense round icon="visibility" @click="ver(c.id)"/>
-                  <q-btn
-                    flat dense round icon="block" color="negative"
-                    v-if="c.estado === 'ACTIVO'"
-                    @click="anular(c.id)"
-                  />
-                </td>
               </tr>
               </tbody>
               <tbody v-else>
               <tr>
-                <td colspan="8" class="text-center">Sin compras</td>
+                <td colspan="9" class="text-center">Sin compras</td>
               </tr>
               </tbody>
             </q-markup-table>
@@ -265,11 +301,12 @@ export default {
         })
     },
     exportCSV () {
-      const header = ['ID', 'Fecha', 'Proveedor', 'Pago', 'Items', 'Total', 'Estado']
+      const header = ['ID', 'Fecha', 'Proveedor', 'Comentario', 'Pago', 'Detalle', 'Total', 'Estado']
       const lines = this.rows.map(r => [
         r.id,
         r.fecha,
         (r.proveedor || ''),
+        (r.nota || ''),
         (r.pago || 'EFECTIVO'),
         r.detalles_count,
         r.total,
