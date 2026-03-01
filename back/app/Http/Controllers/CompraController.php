@@ -91,7 +91,7 @@ class CompraController extends Controller
                     'mesa'    => 'GASTO',
                     'pago'    => $pago,
                     'llamada' => null,
-                    'comment' => null,
+                    'comment' => 'COMPRA_ID:'.$compra->id.';INSUMO_ID:'.$insumo->id,
                     'numero'  => 0,
                 ]);
             }
@@ -162,7 +162,17 @@ class CompraController extends Controller
             $compra->estado = 'ANULADO';
             $compra->save();
 
-            return response()->json(['message' => 'Compra anulada y stock revertido']);
+            // Anular gastos (ventas EGRESO) relacionados a esta compra.
+            // Primero por comment estructurado (nuevo), y como respaldo por nombre histórico.
+            Venta::where('type', 'EGRESO')
+                ->where('status', '!=', 'ANULADO')
+                ->where(function ($q) use ($compra) {
+                    $q->where('comment', 'like', 'COMPRA_ID:'.$compra->id.';%')
+                        ->orWhere('name', 'like', '%(ID '.$compra->id.')%');
+                })
+                ->update(['status' => 'ANULADO']);
+
+            return response()->json(['message' => 'Compra anulada, stock revertido y gastos anulados']);
         });
     }
 
