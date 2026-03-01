@@ -98,23 +98,12 @@
 
     <!-- KPIs -->
     <div class="row q-col-gutter-md q-mb-md" v-if="$store.user.role=='Administrador'">
-      <div class="col-12 col-sm-6 col-md-4">
+      <div class="col-12 col-sm-6 col-md-6">
         <q-card flat bordered class="kpi kpi-green">
           <q-card-section>
             <div class="text-caption text-positive">Ingresos</div>
             <div class="text-h5 text-weight-bold">
               {{ money(kpis.ingresos) }} Bs
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <div class="col-12 col-sm-6 col-md-4">
-        <q-card flat bordered class="kpi kpi-red">
-          <q-card-section>
-            <div class="text-caption text-negative">Egresos</div>
-            <div class="text-h5 text-weight-bold">
-              {{ money(kpis.egresos) }} Bs
             </div>
           </q-card-section>
         </q-card>
@@ -134,7 +123,7 @@
 <!--        </q-card>-->
 <!--      </div>-->
 
-      <div class="col-12 col-sm-6 col-md-4">
+      <div class="col-12 col-sm-6 col-md-6">
         <q-card flat bordered class="kpi">
           <q-card-section>
             <div class="text-caption">Resumen de ventas</div>
@@ -156,7 +145,7 @@
         <q-card flat bordered>
           <q-card-section class="row items-center">
             <div class="text-subtitle1 text-weight-bold">
-              Movimiento diario (Ingresos vs Egresos vs Neto)
+              Ingresos diarios
             </div>
             <q-space />
             <q-btn dense flat icon="fullscreen" round @click="fullScreenChart = !fullScreenChart">
@@ -560,14 +549,10 @@ export default {
     buildChartVentas () {
       const categories = this.porDia.map(r => r.date)
       const ingresos = this.porDia.map(r => Number(r.ingreso || 0))
-      const egresos = this.porDia.map(r => Number(r.egreso || 0))
-      // const neto = this.porDia.map(r => Number(r.neto || 0)) // ✅ oculto
 
       this.chartVentas = {
         series: [
           { name: 'Ingresos', data: ingresos },
-          { name: 'Egresos', data: egresos },
-          // { name: 'Neto', data: neto } // ✅ oculto
         ],
         options: {
           chart: { type: 'bar', toolbar: { show: false } },
