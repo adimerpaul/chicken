@@ -7,6 +7,16 @@ use Illuminate\Http\Request;
 
 class InsumoController extends Controller
 {
+    private function normalizeTipoInsumo($value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $tipo = strtolower(trim((string)$value));
+        return in_array($tipo, ['alimento', 'bebida', 'extra'], true) ? $tipo : null;
+    }
+
     // GET /insumos
     public function index()
     {
@@ -16,8 +26,10 @@ class InsumoController extends Controller
     // POST /insumos
     public function store(Request $request)
     {
-        // sin validaciones, directo
-        $insumo = Insumo::create($request->all());
+        $payload = $request->all();
+        $payload['tipo_insumo'] = $this->normalizeTipoInsumo($request->input('tipo_insumo'));
+
+        $insumo = Insumo::create($payload);
         return response()->json($insumo, 201);
     }
 
@@ -35,7 +47,11 @@ class InsumoController extends Controller
             return false;
         }
         $insumo = Insumo::findOrFail($id);
-        $insumo->update($request->all());
+        $payload = $request->all();
+        if ($request->has('tipo_insumo')) {
+            $payload['tipo_insumo'] = $this->normalizeTipoInsumo($request->input('tipo_insumo'));
+        }
+        $insumo->update($payload);
         return $insumo;
     }
 

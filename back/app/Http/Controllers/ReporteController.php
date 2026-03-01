@@ -7,13 +7,8 @@ use Illuminate\Support\Facades\DB;
 
 class ReporteController extends Controller
 {
-    private function buildSistemaReporte(array $items, ?string $df, ?string $dt): array
+    private function buildSistemaReporteByTipo(string $tipo, ?string $df, ?string $dt): array
     {
-        $names = array_values(array_unique(array_filter(array_map(
-            fn ($i) => $i['name'] ?? null,
-            $items
-        ))));
-
         $rows = DB::table('insumos as i')
             ->leftJoin('insumo_productos as ip', 'ip.insumo_id', '=', 'i.id')
             ->leftJoin('venta_detalles as d', function ($join) {
@@ -33,7 +28,7 @@ class ReporteController extends Controller
                 }
             })
             ->whereNull('i.deleted_at')
-            ->whereIn('i.nombre', $names)
+            ->where('i.tipo_insumo', $tipo)
             ->select(
                 'i.id as insumo_id',
                 'i.nombre',
@@ -43,8 +38,8 @@ class ReporteController extends Controller
                 DB::raw('COALESCE(SUM(ip.cantidad * d.qty), 0) as usado')
             )
             ->groupBy('i.id', 'i.nombre', 'i.unidad', 'i.costo', 'i.stock')
-            ->get()
-            ->keyBy('nombre');
+            ->orderBy('i.nombre')
+            ->get();
 
         $result = [];
         $resumen = [
@@ -55,30 +50,25 @@ class ReporteController extends Controller
             'costo_actual' => 0,
         ];
 
-        foreach ($items as $item) {
-            $label = $item['label'] ?? ($item['name'] ?? 'Insumo');
-            $name = $item['name'] ?? '';
-            $row = $rows[$name] ?? null;
-
-            $costo = $row ? (float)$row->costo : 0.0;
-            $usado = $row ? (float)$row->usado : 0.0;
-            $stock = $row ? (float)$row->stock : 0.0;
+        foreach ($rows as $row) {
+            $costo = (float)$row->costo;
+            $usado = (float)$row->usado;
+            $stock = (float)$row->stock;
             $total = $stock + $usado;
 
             $costo_usado = round($usado * $costo, 2);
             $costo_actual = round($stock * $costo, 2);
 
             $result[] = [
-                'nombre' => $label,
-                'nombre_db' => $row ? $row->nombre : null,
-                'unidad' => $row ? $row->unidad : null,
+                'insumo_id' => (int)$row->insumo_id,
+                'nombre' => $row->nombre,
+                'unidad' => $row->unidad,
                 'total_cant' => round($total, 2),
                 'usado' => round($usado, 2),
                 'stock_actual' => round($stock, 2),
                 'costo' => round($costo, 2),
                 'costo_usado' => $costo_usado,
                 'costo_actual' => $costo_actual,
-                'missing' => $row ? false : true,
             ];
 
             $resumen['cantidad_usada'] += $usado;
@@ -392,40 +382,14 @@ class ReporteController extends Controller
         $df = $request->get('date_from');
         $dt = $request->get('date_to');
 
-        $alimentos = [
-            ['label' => 'POLLO', 'name' => 'Pollo (presa)'],
-            ['label' => 'PAPA', 'name' => 'Papa (por costo)'],
-            ['label' => 'ARROZ', 'name' => 'Arroz (Por Costo)'],
-            ['label' => 'PLATANITOS', 'name' => 'Plátano'],
-        ];
-
-        $gaseosas = [
-            ['label' => 'AGUA 600 ML', 'name' => 'Agua 600 ml'],
-            ['label' => 'GASEOSA 500 ML', 'name' => 'No retornable 500 ml'],
-            ['label' => 'RETORNABLE 1 LITRO', 'name' => 'Retornable 1 Litro'],
-            ['label' => 'RETORNABLE 1.5 LITROS', 'name' => 'Retornable 1,5 Litros'],
-            ['label' => 'NO RETORNABLE 2 LITROS', 'name' => 'No retornable 2 litros'],
-            ['label' => 'AQUARIUS 2 LITRO', 'name' => 'Acuarius 2 litros'],
-            ['label' => 'DEL VALLE 2 LITRO', 'name' => 'Del Valle 2 litros'],
-            ['label' => 'NECTAR 2 LITROS', 'name' => 'Néctar de frutas'],
-        ];
-
-        $extras = [
-            ['label' => 'BOLSAS CON LOGO', 'name' => 'Bolsa llevar'],
-            ['label' => 'CAJA DE POLLO MESA', 'name' => 'Caja de pollo mesa'],
-            ['label' => 'CAJA DE POLLO LLEVAR', 'name' => 'Enbase carton'],
-            ['label' => 'EMBASE ARROZ LLEVAR', 'name' => 'Embase arroz'],
-            ['label' => 'EMBASE SALSAS LLEVAR', 'name' => 'Embase salsas'],
-        ];
-
         return response()->json([
             'filters' => [
                 'date_from' => $df,
                 'date_to' => $dt,
             ],
-            'alimentos' => $this->buildSistemaReporte($alimentos, $df, $dt),
-            'gaseosas' => $this->buildSistemaReporte($gaseosas, $df, $dt),
-            'extras' => $this->buildSistemaReporte($extras, $df, $dt),
+            'alimentos' => $this->buildSistemaReporteByTipo('alimento', $df, $dt),
+            'gaseosas' => $this->buildSistemaReporteByTipo('bebida', $df, $dt),
+            'extras' => $this->buildSistemaReporteByTipo('extra', $df, $dt),
         ]);
     }
 }

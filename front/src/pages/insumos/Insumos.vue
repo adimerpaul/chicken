@@ -124,6 +124,20 @@
           </q-input>
         </q-td>
       </template>
+      <template v-slot:body-cell-tipo_insumo="props">
+        <q-td :props="props">
+          <q-select
+            v-model="props.row.tipo_insumo"
+            :options="tiposInsumo"
+            emit-value
+            map-options
+            dense
+            outlined
+            style="min-width: 150px"
+            @update:model-value="updateStock(props.row)"
+          />
+        </q-td>
+      </template>
       <template v-slot:body-cell-no_contar="props">
         <q-td :props="props">
           <q-checkbox v-model="props.row.no_contar" :true-value="1" :false-value="0" @update:model-value="updateStock(props.row)"/>
@@ -169,6 +183,17 @@
               <div class="col-6">
                 <q-input v-model.number="item.min_stock" type="number" step="0.01" label="Stock mínimo" dense outlined />
               </div>
+              <div class="col-6">
+                <q-select
+                  v-model="item.tipo_insumo"
+                  label="Tipo de insumo"
+                  dense
+                  outlined
+                  :options="tiposInsumo"
+                  emit-value
+                  map-options
+                />
+              </div>
               <div class="col-12">
                 <q-input v-model="item.descripcion" type="textarea" autogrow label="Descripción" dense outlined />
               </div>
@@ -201,10 +226,17 @@ export default {
         { label: 'LT',  value: 'LT'  },
         { label: 'PAQ', value: 'PAQ' },
       ],
+      tiposInsumo: [
+        { label: 'Ninguno', value: null },
+        { label: 'Alimento', value: 'alimento' },
+        { label: 'Bebida', value: 'bebida' },
+        { label: 'Extra', value: 'extra' },
+      ],
       columns: [
         { name: 'actions', label: 'Acciones', align: 'center' },
         { name: 'nombre',  label: 'Nombre',   align: 'left',  field: 'nombre', sortable: true },
         { name: 'unidad',  label: 'Unidad',   align: 'left',  field: 'unidad', sortable: true },
+        { name: 'tipo_insumo', label: 'Tipo de insumo', align: 'left', field: 'tipo_insumo', sortable: true },
         { name: 'stock',   label: 'Stock',    align: 'left',  field: 'stock',  sortable: true },
         { name: 'costo',   label: 'Costo (Bs)', align: 'left', field: 'costo', sortable: true },
         { name: 'no_contar', label: 'No contar en stock', align: 'left', field: 'no_contar' },
@@ -228,7 +260,8 @@ export default {
           stock: row.stock,
           no_contar: row.no_contar ? 1 : 0,
           es_mesa: row.es_mesa ? 1 : 0,
-          es_llevar: row.es_llevar ? 1 : 0
+          es_llevar: row.es_llevar ? 1 : 0,
+          tipo_insumo: row.tipo_insumo || null
         })
         this.$alert?.success?.('Actualizado')
       } catch (e) {
@@ -263,12 +296,13 @@ export default {
         stock: 0,
         costo: 0,
         min_stock: null,
+        tipo_insumo: null,
         descripcion: ''
       }
       this.dlg = true
     },
     onEdit (row) {
-      this.item = { ...row }
+      this.item = { ...row, tipo_insumo: row.tipo_insumo || null }
       this.dlg = true
     },
     async onDelete (id) {
