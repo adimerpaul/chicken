@@ -143,6 +143,52 @@ class CajaAjusteController extends Controller
         }
 
         // ============
+        // 4b) DETALLE INGRESOS ADMIN POR DIA (solo ingresos sin items en venta_detalles)
+        // ============
+        $ingAdminDetalleQuery = DB::table('ventas as v')
+            ->leftJoin('users as u', 'u.id', '=', 'v.user_id')
+            ->selectRaw("DATE(v.date) as fecha")
+            ->addSelect(
+                'v.id',
+                'v.numero',
+                'v.time',
+                'v.name as detalle',
+                'v.comment',
+                'v.total',
+                'v.pago',
+                'u.name as user_name'
+            )
+            ->where('v.type', 'INGRESO')
+            ->where('v.status', 'ACTIVO')
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('venta_detalles as vd')
+                    ->whereColumn('vd.venta_id', 'v.id')
+                    ->whereNull('vd.deleted_at');
+            })
+            ->orderBy(DB::raw('DATE(v.date)'), 'asc')
+            ->orderBy('v.id', 'asc');
+
+        $applyFilters($ingAdminDetalleQuery);
+        $ingAdminDetalle = $ingAdminDetalleQuery->get();
+
+        $ingAdminDetalleByDay = [];
+        foreach ($ingAdminDetalle as $r) {
+            $f = $r->fecha;
+            if (!isset($ingAdminDetalleByDay[$f])) $ingAdminDetalleByDay[$f] = [];
+            $ingAdminDetalleByDay[$f][] = [
+                'id' => (int)$r->id,
+                'numero' => (int)($r->numero ?? 0),
+                'hora' => substr((string)($r->time ?? ''), 0, 8),
+                'detalle' => $r->detalle ?? '',
+                'comment' => $r->comment ?? null,
+                'pago' => $r->pago ?? null,
+                'user_name' => $r->user_name ?? 'SN',
+                'total' => (float)$r->total,
+            ];
+        }
+
+        // ============
         // 5) Construcción final rows
         // ============
         $rows = collect($days)->map(function ($d) use ($ingTotalByDay, $egrTotalByDay) {
@@ -180,6 +226,7 @@ class CajaAjusteController extends Controller
             'detalle' => [
                 'ingresos_by_day' => $ingDetalleByDay,
                 'egresos_by_day' => $egrDetalleByDay,
+                'ingresos_detalle_by_day' => $ingAdminDetalleByDay,
             ],
 
             'totales' => [
@@ -265,6 +312,29 @@ class CajaAjusteController extends Controller
             $list = $data['detalle']['egresos_by_day'][$f] ?? [];
             foreach ($list as $e) {
                 $s3->fromArray([$row['label'], $e['detalle'], $e['total']], null, "A{$r}");
+                $r++;
+            }
+        }
+
+        // Hoja 4: Ingresos admin detalle (sin items en venta_detalles)
+        $s4 = $spreadsheet->createSheet();
+        $s4->setTitle('Ingresos Admin Detalle');
+        $s4->fromArray(['Fecha', 'Usuario', 'Hora', 'Pago', 'Detalle', 'Comentario', 'Total'], null, 'A1');
+
+        $r = 2;
+        foreach ($data['rows'] as $row) {
+            $f = $row['fecha'];
+            $list = $data['detalle']['ingresos_detalle_by_day'][$f] ?? [];
+            foreach ($list as $i) {
+                $s4->fromArray([
+                    $row['label'],
+                    $i['user_name'] ?? 'SN',
+                    $i['hora'] ?? '',
+                    $i['pago'] ?? '',
+                    $i['detalle'] ?? '',
+                    $i['comment'] ?? '',
+                    $i['total'] ?? 0,
+                ], null, "A{$r}");
                 $r++;
             }
         }

@@ -88,6 +88,10 @@ class VentaController extends Controller
     }
     function anular(Venta $sale)
     {
+        $user = request()->user();
+        if (!$user || $user->role !== 'Administrador') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
 //        solo se puede anular del ida
         $now = Carbon::now();
         if ($sale->date !== $now->toDateString()) {
@@ -318,6 +322,39 @@ class VentaController extends Controller
     public function show(Venta $sale)
     {
         return $sale->load('detalles','user');
+    }
+
+    // PUT/PATCH /sales/{sale}
+    public function update(Request $request, Venta $sale)
+    {
+        $user = $request->user();
+        if (!$user || $user->role !== 'Administrador') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $data = $request->validate([
+            'type'    => ['sometimes', 'nullable', 'string', Rule::in(['INGRESO', 'EGRESO', 'CAJA'])],
+            'status'  => ['sometimes', 'nullable', 'string', Rule::in(['ACTIVO', 'ANULADO'])],
+            'name'    => ['sometimes', 'nullable', 'string', 'max:180'],
+            'mesa'    => ['sometimes', 'nullable', 'string', 'max:40'],
+            'pago'    => ['sometimes', 'nullable', 'string', 'max:40'],
+            'llamada' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'comment' => ['sometimes', 'nullable', 'string', 'max:500'],
+        ]);
+
+        $allowed = ['type', 'status', 'name', 'mesa', 'pago', 'llamada', 'comment'];
+        $payload = [];
+        foreach ($allowed as $field) {
+            if ($request->exists($field)) {
+                $payload[$field] = $data[$field] ?? null;
+            }
+        }
+
+        if (!empty($payload)) {
+            $sale->update($payload);
+        }
+
+        return $sale->fresh()->load('detalles', 'user');
     }
 
     // GET /sales/report/by-user

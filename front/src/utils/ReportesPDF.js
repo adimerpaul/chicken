@@ -45,6 +45,27 @@ export class ReportesPDF {
     doc.save(filename)
   }
 
+  static _download(doc, filename) {
+    doc.save(filename)
+  }
+
+  static async _shareFile(doc, filename, text = 'Te envio el reporte en PDF.') {
+    const blob = doc.output('blob')
+    const file = new File([blob], filename, { type: 'application/pdf' })
+
+    const canShareFiles = !!navigator?.canShare && navigator.canShare({ files: [file] })
+    if (canShareFiles && navigator.share) {
+      await navigator.share({
+        title: filename,
+        text,
+        files: [file]
+      })
+      return true
+    }
+
+    return false
+  }
+
   // ===== 1) Ventas por usuario (RESUMEN) =====
   static async ventasPorUsuario(data) {
     const dateFrom = data?.date_from || '-'
@@ -177,7 +198,7 @@ export class ReportesPDF {
   }
 
   // ===== 4) Cierre del día (todos los usuarios) =====
-  static async cierreDiaUsuarios(data) {
+  static _buildCierreDiaUsuariosDoc(data) {
     const date = data?.date || '-'
     const users = data?.usuarios || []
     const resumen = data?.resumen || {}
@@ -214,7 +235,26 @@ export class ReportesPDF {
       }
     })
 
+    return { doc, date }
+  }
+
+  static async cierreDiaUsuarios(data) {
+    const { doc, date } = this._buildCierreDiaUsuariosDoc(data)
     await this._saveOrShare(doc, `cierre_del_dia_${date}.pdf`)
+  }
+
+  static async cierreDiaUsuariosDescargar(data) {
+    const { doc, date } = this._buildCierreDiaUsuariosDoc(data)
+    this._download(doc, `cierre_del_dia_${date}.pdf`)
+  }
+
+  static async cierreDiaUsuariosWhatsApp(data) {
+    const { doc, date } = this._buildCierreDiaUsuariosDoc(data)
+    const shared = await this._shareFile(doc, `cierre_del_dia_${date}.pdf`, 'Reporte Ingresos del dia en PDF')
+    if (!shared) {
+      this._download(doc, `cierre_del_dia_${date}.pdf`)
+      throw new Error('share_not_supported')
+    }
   }
 
   // ===== 5) Cierre de caja (1 usuario) =====

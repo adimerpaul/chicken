@@ -103,7 +103,7 @@
         <div class="col">
           <div class="text-subtitle1 text-weight-bold">Desglose del día</div>
           <div class="text-caption text-grey-7">
-            Click en un día (arriba) para ver el detalle (ingresos por usuario + egresos itemizados).
+            Click en un día (arriba) para ver: ingresos por usuario, egresos detalle e ingresos administrativos.
           </div>
         </div>
         <div class="col-auto">
@@ -116,7 +116,7 @@
 
       <q-card-section class="row q-col-gutter-sm">
         <!-- INGRESOS DETALLE -->
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-4">
           <div class="panel-title blue">INGRESOS (por usuario)</div>
           <div class="panel-wrap">
             <table class="mini-table">
@@ -142,7 +142,7 @@
         </div>
 
         <!-- EGRESOS DETALLE -->
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-4">
           <div class="panel-title orange">EGRESOS (detalle)</div>
           <div class="panel-wrap">
             <table class="mini-table">
@@ -159,6 +159,38 @@
               </tr>
               <tr v-if="!egrSelectedList.length">
                 <td colspan="2" class="td-center muted">Sin egresos</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- INGRESOS DETALLE (ADMIN SIN ITEMS) -->
+        <div class="col-12 col-md-4">
+          <div class="panel-title green">INGRESOS (detalle)</div>
+          <div class="panel-wrap">
+            <table class="mini-table">
+              <thead>
+              <tr>
+                <th class="th-left">Detalle</th>
+                <th class="th-right">Total</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr v-for="i in ingDetalleSelectedList" :key="i.id">
+                <td class="td-left">
+                  <div class="text-weight-medium">{{ i.detalle }}</div>
+                  <div class="text-caption text-grey-7">
+                    {{ i.user_name }} • {{ i.hora }} • {{ i.pago || 'SN' }}
+                  </div>
+                  <div v-if="i.comment" class="text-caption text-grey-8">
+                    {{ i.comment }}
+                  </div>
+                </td>
+                <td class="td-right">{{ money(i.total) }}</td>
+              </tr>
+              <tr v-if="!ingDetalleSelectedList.length">
+                <td colspan="2" class="td-center muted">Sin ingresos administrativos</td>
               </tr>
               </tbody>
             </table>
@@ -285,7 +317,7 @@ export default {
 
       users: [],
       rows: [],
-      detalle: { ingresos_by_day: {}, egresos_by_day: {} },
+      detalle: { ingresos_by_day: {}, egresos_by_day: {}, ingresos_detalle_by_day: {} },
       totales: { ingresos: 0, egresos: 0, en_caja: 0 },
 
       selectedDay: null,
@@ -314,6 +346,10 @@ export default {
     egrSelectedList () {
       if (!this.selectedDay) return []
       return (this.detalle.egresos_by_day?.[this.selectedDay]) || []
+    },
+    ingDetalleSelectedList () {
+      if (!this.selectedDay) return []
+      return (this.detalle.ingresos_detalle_by_day?.[this.selectedDay]) || []
     }
   },
   mounted () {
@@ -376,7 +412,7 @@ export default {
 
         this.users = data.users || []
         this.rows = data.rows || []
-        this.detalle = data.detalle || { ingresos_by_day: {}, egresos_by_day: {} }
+        this.detalle = data.detalle || { ingresos_by_day: {}, egresos_by_day: {}, ingresos_detalle_by_day: {} }
         this.totales = data.totales || this.totales
 
         this.selectedDay = this.rows?.[0]?.fecha || null
@@ -473,6 +509,7 @@ export default {
 }
 .panel-title.blue{ background:#8fb0de; }
 .panel-title.orange{ background:#f2c7a9; }
+.panel-title.green{ background:#b7d8b4; }
 
 .panel-wrap{
   border: 2px solid #111;

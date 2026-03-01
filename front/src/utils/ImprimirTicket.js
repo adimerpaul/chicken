@@ -743,7 +743,14 @@ export class Imprimir {
 
     const html = `
   <style>
-    *{ box-sizing:border-box; margin:0; padding:0; }
+    @page { size: auto; margin: 6mm; }
+    *{
+      box-sizing:border-box;
+      margin:0;
+      padding:0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
     body{ font-family: Arial, sans-serif; font-size:11px; }
     .ticket{ width:7.2cm; padding:4px 6px; }
     .center{ text-align:center; }

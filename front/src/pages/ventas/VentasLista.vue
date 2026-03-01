@@ -160,14 +160,28 @@
 
 <!--            btn ingresos-->
 
-            <q-btn
+            <q-btn-dropdown
               color="blue"
               icon="query_stats"
               label="Ingresos del día"
               no-caps
               class="q-mr-sm"
-              @click="verIngresosHoy"
-            />
+            >
+              <q-list>
+                <q-item clickable @click="ingresosDiaImprimir" v-close-popup>
+                  <q-item-section avatar><q-icon name="print" /></q-item-section>
+                  <q-item-section>Imprimir en impresora</q-item-section>
+                </q-item>
+                <q-item clickable @click="ingresosDiaDescargarPdf" v-close-popup>
+                  <q-item-section avatar><q-icon name="picture_as_pdf" color="red" /></q-item-section>
+                  <q-item-section>Descargar PDF</q-item-section>
+                </q-item>
+                <q-item clickable @click="ingresosDiaWhatsapp" v-close-popup>
+                  <q-item-section avatar><q-icon name="share" color="green" /></q-item-section>
+                  <q-item-section>Mandar por WhatsApp</q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
 
 
             <q-btn
@@ -282,7 +296,7 @@
             <q-td :props="props">
               <q-btn-dropdown dense label="Opciones" no-caps size="xs" color="primary">
                 <q-list>
-                  <q-item clickable v-if="props.row.type === 'INGRESO'" @click="openDetail(props.row)" v-close-popup>
+                  <q-item clickable v-if="$store.user.role === 'Administrador' && props.row.type === 'INGRESO'" @click="openDetail(props.row)" v-close-popup>
                   <q-item-section avatar><q-icon name="visibility" /></q-item-section>
                     <q-item-section>Ver Detalle</q-item-section>
                   </q-item>
@@ -294,8 +308,18 @@
 
                   <q-item
                     clickable
+                    v-if="$store.user.role === 'Administrador'"
+                    @click="openEditVenta(props.row)"
+                    v-close-popup
+                  >
+                    <q-item-section avatar><q-icon name="edit" /></q-item-section>
+                    <q-item-section>Editar venta</q-item-section>
+                  </q-item>
+
+                  <q-item
+                    clickable
                     solo so puede anular del dia de hoy
-                    v-if="props.row.status === 'ACTIVO' && moment(props.row.date).isSame(moment(), 'day')"
+                    v-if="$store.user.role === 'Administrador' && props.row.status === 'ACTIVO' && moment(props.row.date).isSame(moment(), 'day')"
                     @click="anularVenta(props.row)"
                     v-close-popup
                   >
@@ -375,6 +399,93 @@
 
           <div class="text-right q-mt-sm text-h6">
             Total: {{ money(current?.total || 0) }} Bs
+          </div>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- EDITAR VENTA (ADMIN) -->
+    <q-dialog v-model="dialogEditarVenta" persistent>
+      <q-card style="width: 560px; max-width: 95vw">
+        <q-card-section class="row items-center q-pb-none">
+          <div class="text-subtitle1 text-weight-bold">
+            Editar venta #{{ editVenta.numero || editVenta.id || '' }}
+          </div>
+          <q-space />
+          <q-btn flat round dense icon="close" @click="dialogEditarVenta = false" />
+        </q-card-section>
+
+        <q-card-section class="q-pt-sm">
+          <div class="row q-col-gutter-sm">
+            <div class="col-12 col-sm-4">
+              <q-select
+                v-model="editVenta.type"
+                :options="typeOptions"
+                dense
+                outlined
+                emit-value
+                map-options
+                label="Tipo"
+              />
+            </div>
+            <div class="col-12 col-sm-4">
+              <q-select
+                v-model="editVenta.mesa"
+                :options="mesaOptions"
+                dense
+                outlined
+                emit-value
+                map-options
+                label="Mesa"
+              />
+            </div>
+            <div class="col-12 col-sm-4">
+              <q-select
+                v-model="editVenta.pago"
+                :options="pagoOptions"
+                dense
+                outlined
+                emit-value
+                map-options
+                label="Pago"
+              />
+            </div>
+
+            <div class="col-12">
+              <q-input
+                v-model="editVenta.name"
+                dense
+                outlined
+                label="Nombre / Cliente"
+              />
+            </div>
+
+            <div class="col-12 col-sm-4">
+              <q-input
+                v-model.number="editVenta.llamada"
+                type="number"
+                min="0"
+                dense
+                outlined
+                label="Llamada"
+              />
+            </div>
+
+            <div class="col-12">
+              <q-input
+                v-model="editVenta.comment"
+                type="textarea"
+                autogrow
+                dense
+                outlined
+                label="Comentario"
+              />
+            </div>
+          </div>
+
+          <div class="text-right q-mt-md">
+            <q-btn flat label="Cancelar" no-caps class="q-mr-sm" @click="dialogEditarVenta = false" />
+            <q-btn color="primary" label="Guardar cambios" no-caps :loading="loading" @click="saveEditVenta" />
           </div>
         </q-card-section>
       </q-card>
@@ -679,6 +790,17 @@ export default {
       loading: false,
       rows: [],
       venta: { name: '', total: null, pago: 'EFECTIVO', comment: '' },
+      dialogEditarVenta: false,
+      editVenta: {
+        id: null,
+        numero: null,
+        type: 'INGRESO',
+        name: '',
+        mesa: 'MESA',
+        pago: 'EFECTIVO',
+        llamada: null,
+        comment: ''
+      },
       dialogGasto: false,
       meta: { current_page: 1, last_page: 1, total: 0, from: 0, to: 0, per_page: 20 },
       pagination: { page: 1, rowsPerPage: 20, sortBy: 'date', descending: true },
@@ -715,6 +837,26 @@ export default {
         { name: 'price', label: 'Precio', field: 'price', align: 'right' },
         { name: 'subtotal', label: 'Subtotal', field: 'subtotal', align: 'right' }
       ],
+      typeOptions: [
+        { label: 'INGRESO', value: 'INGRESO' },
+        { label: 'EGRESO', value: 'EGRESO' },
+        { label: 'CAJA', value: 'CAJA' }
+      ],
+      mesaOptions: [
+        { label: 'MESA', value: 'MESA' },
+        { label: 'LLEVAR', value: 'LLEVAR' },
+        { label: 'DELIVERY', value: 'DELIVERY' },
+        { label: 'PEDIDOS YA', value: 'PEDIDOS YA' },
+        { label: 'INGRESO', value: 'INGRESO' },
+        { label: 'GASTO', value: 'GASTO' },
+        { label: 'CAJA', value: 'CAJA' }
+      ],
+      pagoOptions: [
+        { label: 'EFECTIVO', value: 'EFECTIVO' },
+        { label: 'QR', value: 'QR' },
+        { label: 'TARJETA', value: 'TARJETA' },
+        { label: 'ONLINE', value: 'ONLINE' }
+      ],
 
       users: [],
       dialogReporteUsuario: false,
@@ -730,12 +872,10 @@ export default {
   },
   computed: {
     columns () {
-      // verificar si es admin
-      console.log('ROL USUARIO:', this.$store.user.role)
       const isAdmin = this.$store.user.role === 'Administrador'
       const baseColumns = [
+        { name: 'actions', label: 'Opciones', field: 'id', align: 'left' },
         { name: 'numero', label: '#', field: 'numero', align: 'left', sortable: true },
-        // { name: 'actions', label: 'Opciones', field: 'id', align: 'right' },
         { name: 'date', label: 'Fecha', field: 'date', align: 'left', sortable: true },
         { name: 'time', label: 'Hora', field: row => String(row.time).substring(0, 8), align: 'left' },
         { name: 'name', label: 'Cliente', field: 'name', align: 'left' },
@@ -746,9 +886,7 @@ export default {
         // { name: 'total', label: 'Total (Bs)', field: 'total', align: 'right', sortable: true }
       ]
       if (isAdmin) {
-        // baseColumns.push({ name: 'user', label: 'Usuario', field: row => row.user?.name || 'N/A', align: 'left' })
         baseColumns.push(
-          { name: 'actions', label: 'Opciones', field: 'id', align: 'right' },
           { name: 'pago', label: 'Pago', field: 'pago', align: 'left' },
           { name: 'type', label: 'Tipo', field: 'type', align: 'left' },
           { name: 'status', label: 'Estado', field: 'status', align: 'left' },
@@ -1118,6 +1256,45 @@ export default {
       })
     },
 
+    openEditVenta (row) {
+      this.editVenta = {
+        id: row.id,
+        numero: row.numero,
+        type: row.type || 'INGRESO',
+        name: row.name || '',
+        mesa: row.mesa || 'MESA',
+        pago: row.pago || 'EFECTIVO',
+        llamada: row.llamada ?? null,
+        comment: row.comment || ''
+      }
+      this.dialogEditarVenta = true
+    },
+
+    async saveEditVenta () {
+      if (!this.editVenta?.id) return
+      try {
+        this.loading = true
+        await this.$axios.put(`sales/${this.editVenta.id}`, {
+          type: this.editVenta.type,
+          name: this.editVenta.name || null,
+          mesa: this.editVenta.mesa || null,
+          pago: this.editVenta.pago || null,
+          llamada: this.editVenta.llamada === '' ? null : this.editVenta.llamada,
+          comment: this.editVenta.comment || null
+        })
+        this.$q.notify?.({ type: 'positive', message: 'Venta actualizada' })
+        this.dialogEditarVenta = false
+        this.fetchSales()
+      } catch (e) {
+        this.$q.notify?.({
+          type: 'negative',
+          message: e?.response?.data?.message || 'No se pudo actualizar la venta'
+        })
+      } finally {
+        this.loading = false
+      }
+    },
+
     money (v) {
       return Number(v || 0).toLocaleString('es-BO', {
         minimumFractionDigits: 2,
@@ -1160,18 +1337,70 @@ export default {
     //   this.dialogGasto = true
     // },
 
-    async verIngresosHoy () {
+    async getIngresosDiaData () {
+      const { data } = await this.$axios.get('cierres-caja/reporte/ultimo')
+      return data
+    },
+
+    async ingresosDiaImprimir () {
       try {
         this.loading = true
-        const { data } = await this.$axios.get('cierres-caja/reporte/ultimo')
+        const data = await this.getIngresosDiaData()
         Imprimir.reporteUltimoCierreUsuarios(data)
-        this.loading = false
       } catch (e) {
-        this.loading = false
         this.$q.notify?.({
           type: 'negative',
           message: 'No hay cierres de caja registrados'
         })
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async ingresosDiaDescargarPdf () {
+      try {
+        this.loading = true
+        const data = await this.getIngresosDiaData()
+        await ReportesPDF.cierreDiaUsuariosDescargar(data)
+      } catch (e) {
+        this.$q.notify?.({
+          type: 'negative',
+          message: 'No se pudo descargar el PDF de ingresos del día'
+        })
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async ingresosDiaWhatsapp () {
+      try {
+        this.loading = true
+        const data = await this.getIngresosDiaData()
+        await ReportesPDF.cierreDiaUsuariosWhatsApp(data)
+      } catch (e) {
+        this.$q.notify?.({
+          type: e?.message === 'share_not_supported' ? 'warning' : 'negative',
+          message: e?.message === 'share_not_supported'
+            ? 'Tu navegador no permite compartir archivo; se descargó el PDF.'
+            : 'No se pudo compartir por WhatsApp'
+        })
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async verIngresosHoy () {
+      try {
+        this.loading = true
+        const data = await this.getIngresosDiaData()
+        Imprimir.reporteUltimoCierreUsuarios(data)
+      } catch (e) {
+        this.$q.notify?.({
+          type: 'negative',
+          message: 'No hay cierres de caja registrados'
+        })
+      } finally {
+        this.loading = false
       }
     },
 
