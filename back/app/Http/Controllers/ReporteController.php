@@ -136,11 +136,20 @@ class ReporteController extends Controller
             // >>> ignorar ventas soft-deleted
             ->whereNull('v.deleted_at');
 
+        $applyIngresosConDetalle = function ($q) {
+            return $q
+                ->where('v.type', 'INGRESO')
+                ->where('v.status', '!=', 'ANULADO')
+                ->whereExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('venta_detalles as vd')
+                        ->whereColumn('vd.venta_id', 'v.id')
+                        ->whereNull('vd.deleted_at');
+                });
+        };
+
         // Totales principales
-        $ingresos = (clone $base)
-            ->where('v.type', 'INGRESO')
-            ->where('v.status', '!=', 'ANULADO')
-            ->sum('v.total');
+        $ingresos = $applyIngresosConDetalle(clone $base)->sum('v.total');
 
         $egresos = (clone $base)
             ->where('v.type', 'EGRESO')
@@ -162,24 +171,21 @@ class ReporteController extends Controller
         $ticket_prom = $ventasCt ? round($ingresos / $ventasCt, 2) : 0;
 
         // Pagos (incluye QR)
-        $pagos = (clone $base)
+        $pagos = $applyIngresosConDetalle(clone $base)
             ->select(
                 'v.pago',
                 DB::raw('COUNT(*) as items'),
                 DB::raw('SUM(v.total) as total')
             )
-            ->where('v.status', '!=', 'ANULADO')
             ->groupBy('v.pago')
             ->get();
 
-        $qr_total = (clone $base)
+        $qr_total = $applyIngresosConDetalle(clone $base)
             ->where('v.pago', 'QR')
-            ->where('v.status', '!=', 'ANULADO')
             ->sum('v.total');
 
-        $qr_items = (clone $base)
+        $qr_items = $applyIngresosConDetalle(clone $base)
             ->where('v.pago', 'QR')
-            ->where('v.status', '!=', 'ANULADO')
             ->count();
 
         // Mesas
@@ -197,7 +203,7 @@ class ReporteController extends Controller
         $por_dia = (clone $base)
             ->select(
                 'v.date',
-                DB::raw("SUM(CASE WHEN v.type='INGRESO' AND v.status!='ANULADO' THEN v.total ELSE 0 END) as ingreso"),
+                DB::raw("SUM(CASE WHEN v.type='INGRESO' AND v.status!='ANULADO' AND EXISTS (SELECT 1 FROM venta_detalles vd WHERE vd.venta_id = v.id AND vd.deleted_at IS NULL) THEN v.total ELSE 0 END) as ingreso"),
                 DB::raw("SUM(CASE WHEN v.type='EGRESO'  AND v.status!='ANULADO' THEN v.total ELSE 0 END) as egreso")
             )
             ->groupBy('v.date')
@@ -214,7 +220,7 @@ class ReporteController extends Controller
             ->select(
                 'v.user_id',
                 DB::raw("COALESCE(u.name,'—') as name"),
-                DB::raw("SUM(CASE WHEN v.type='INGRESO' AND v.status!='ANULADO' THEN v.total ELSE 0 END) as ingreso"),
+                DB::raw("SUM(CASE WHEN v.type='INGRESO' AND v.status!='ANULADO' AND EXISTS (SELECT 1 FROM venta_detalles vd WHERE vd.venta_id = v.id AND vd.deleted_at IS NULL) THEN v.total ELSE 0 END) as ingreso"),
                 DB::raw("SUM(CASE WHEN v.type='EGRESO'  AND v.status!='ANULADO' THEN v.total ELSE 0 END) as egreso")
             )
             // >>> opcional: si users también tiene deleted_at
