@@ -98,7 +98,7 @@ export class Imprimir {
         .col-total { width: 25%; text-align: right; }
         .total-section {
           margin-top: 6px;
-          font-size: 12px;
+          font-size: 16px;
         }
         .total-row {
           display: flex;
@@ -112,11 +112,12 @@ export class Imprimir {
         .ticket-line {
           margin-top: 10px;
           text-align: center;
-          font-size: 15px;
+          font-size: 24px;
           font-weight: bold;
         }
         .ticket-line span.mesa {
-          font-size: 18px;
+          font-size: 28px;
+          font-weight: bold;
           font-style: italic;
         }
         .box-firma {
@@ -137,11 +138,10 @@ export class Imprimir {
           font-weight: bold;
         }
         .llamada-num {
-          position: absolute;
-          right: 6px;
-          top: 4px;
+          text-align: right;
           font-size: 22px;
           font-weight: bold;
+          margin-bottom: 2px;
         }
         .cliente-nombre {
           text-align: center;
@@ -152,23 +152,18 @@ export class Imprimir {
       </style>
 
       <div class="ticket-wrapper">
-        <div style="position:relative;">
+        <div>
           ${type === 'INGRESO' && llamada
-      ? `<div class="llamada-num">${llamada}</div>`
+      ? `<div class="llamada-num">${mesa}: ${llamada}</div>`
       : ''
     }
-          <div class="logo">
-            <img src="${logoSrc}" alt="Chicken's Garden">
-          </div>
-          <div class="center nombre-local">CHICKEN'S GARDEN</div>
-          <div class="center contacto">CONTACTOS: 77909517</div>
-          <div class="center direccion">Mercado Campero - Calle 6 N° 21</div>
           ${type === 'INGRESO' && venta.name && venta.name !== 'SN'
       ? `<div class="cliente-nombre">${venta.name}</div>`
       : ''
     }
           <div class="fecha-hora">
             <span>${date}</span>
+            <span style="font-weight:bold;"></span>
             <span>${time}</span>
           </div>
           <hr>
@@ -200,7 +195,7 @@ export class Imprimir {
           </div>
           <div class="box-firma">
           ${comment
-      ? `<div style="margin-top:4px;">${comment}</div>`
+      ? `<div style="margin-top:4px; font-size:16px; font-weight:bold;">${comment}</div>`
       : ''
     }
 </div>
