@@ -117,13 +117,13 @@
 
             <!-- COSTO / UTILIDAD -->
             <div class="row items-center q-mt-xs">
-              <div>
+              <!-- <div>
                 <div class="text-caption text-grey-7">Costo aprox.</div>
                 <div class="text-caption">
                   {{ toMoney(p.costo_insumos || 0) }} Bs
                 </div>
-              </div>
-              <q-space/>
+              </div> -->
+              <q-space/> 
               <div class="text-right">
                 <div class="text-caption text-grey-7">Utilidad aprox.</div>
                 <div

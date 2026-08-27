@@ -15,33 +15,84 @@
               <div class="col-12 col-md-6 q-pa-xs text-right">
                 <q-btn flat color="primary" icon="refresh" :loading="loading" @click="insumosGet"/>
               </div>
+
+              <!-- FILTRO POR TIPO DE INSUMO -->
+              <div class="col-12 q-pa-xs">
+                <div class="row items-center q-gutter-xs">
+                  <q-chip
+                    clickable
+                    :color="tipoFilter === 'all' ? 'indigo' : 'grey-4'"
+                    :text-color="tipoFilter === 'all' ? 'white' : 'black'"
+                    icon="public"
+                    @click="tipoFilter = 'all'"
+                  >
+                    Todo
+                    <q-badge class="q-ml-xs" color="white" text-color="black" :label="insumos.length"/>
+                  </q-chip>
+
+                  <q-chip
+                    v-for="t in tiposDisponibles"
+                    :key="String(t.value)"
+                    clickable
+                    :color="tipoFilter === t.value ? t.color : 'grey-4'"
+                    :text-color="tipoFilter === t.value ? 'white' : 'black'"
+                    :icon="t.icon"
+                    @click="tipoFilter = t.value"
+                  >
+                    {{ t.label }}
+                    <q-badge class="q-ml-xs" color="white" text-color="black" :label="t.count"/>
+                  </q-chip>
+                </div>
+              </div>
             </div>
 
-            <div class="row q-mt-sm">
-              <div class="col-8">
-                <div class="text-subtitle1 text-weight-bold">Insumo</div>
-              </div>
-              <div class="col-4 text-right">
-                <div class="text-subtitle1 text-weight-bold">Stock</div>
-              </div>
-
+            <!-- GRID DE INSUMOS -->
+            <div class="row q-col-gutter-sm q-mt-xs">
               <div
                 v-for="insumo in filteredInsumos"
                 :key="insumo.id"
-                class="col-12 q-mt-sm"
+                class="col-6 col-sm-4 col-lg-3"
               >
-                <div class="row cursor-pointer" @click="openQtyDialog(insumo)">
-                  <div class="col-8">
-                    <div class="text-body1">{{ insumo.nombre }}</div>
-                    <div class="text-caption text-grey">
-                      {{ insumo.unidad }} — {{ insumo.costo || '—' }}
+                <q-card flat bordered class="insumo-card cursor-pointer full-height column"
+                        @click="openQtyDialog(insumo)">
+                  <q-card-section class="q-pa-sm col">
+                    <div class="row items-start no-wrap q-gutter-xs">
+                      <div class="insumo-icon" :class="`bg-${tipoInfo(insumo.tipo_insumo).color}`">
+                        <q-icon :name="tipoInfo(insumo.tipo_insumo).icon" size="18px" color="white"/>
+                      </div>
+                      <div class="col">
+                        <div class="text-weight-bold text-body2 insumo-nombre">{{ insumo.nombre }}</div>
+                        <div class="text-caption text-grey-7">
+                          {{ tipoInfo(insumo.tipo_insumo).label }}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div class="col-4 text-right">
-                    <div class="text-body1">{{ to2(insumo.stock) }}</div>
-                  </div>
-                </div>
-                <q-separator spaced inset/>
+                  </q-card-section>
+
+                  <q-separator/>
+
+                  <q-card-section class="q-pa-sm">
+                    <div class="row items-center justify-between">
+                      <q-chip dense square color="grey-3" text-color="grey-9" size="11px" class="q-ma-none">
+                        {{ insumo.unidad || '—' }}
+                      </q-chip>
+                      <div class="text-caption text-grey-7">
+                        Costo: <b>{{ to2(insumo.costo) }}</b> Bs
+                      </div>
+                    </div>
+                    <div class="row items-center justify-between q-mt-xs">
+                      <div class="text-caption text-grey-7">Stock</div>
+                      <div class="text-weight-bold" :class="stockColor(insumo)">
+                        {{ to2(insumo.stock) }}
+                      </div>
+                    </div>
+                  </q-card-section>
+                </q-card>
+              </div>
+
+              <div v-if="!filteredInsumos.length" class="col-12 text-center text-grey q-pa-lg">
+                <q-icon name="search_off" size="32px"/>
+                <div class="q-mt-xs">Sin insumos para este filtro</div>
               </div>
             </div>
           </q-card-section>
@@ -230,6 +281,13 @@ export default {
     return {
       loading: false,
       search: '',
+      tipoFilter: 'all',
+      tiposInsumo: [
+        { label: 'Alimento', value: 'alimento', icon: 'restaurant', color: 'orange-8' },
+        { label: 'Bebida', value: 'bebida', icon: 'local_bar', color: 'blue-7' },
+        { label: 'Extra', value: 'extra', icon: 'add_circle', color: 'purple-6' },
+        { label: 'Sin tipo', value: null, icon: 'help_outline', color: 'grey-7' }
+      ],
       insumos: [],
       carrito: [],
       proveedores: [],
@@ -254,14 +312,23 @@ export default {
       const list = this.proveedoresFiltered.length ? this.proveedoresFiltered : this.proveedores
       return list.map(p => ({ label: p.nombre, value: p.nombre }))
     },
+    tiposDisponibles () {
+      return this.tiposInsumo
+        .map(t => ({
+          ...t,
+          count: this.insumos.filter(i => (i.tipo_insumo || null) === t.value).length
+        }))
+        .filter(t => t.count > 0)
+    },
     filteredInsumos () {
       const q = (this.search || '').toLowerCase()
-      if (!q) return this.insumos
-      return this.insumos.filter(i =>
-        String(i.nombre || '').toLowerCase().includes(q) ||
-        String(i.unidad || '').toLowerCase().includes(q) ||
-        String(i.descripcion || '').toLowerCase().includes(q)
-      )
+      return this.insumos.filter(i => {
+        if (this.tipoFilter !== 'all' && (i.tipo_insumo || null) !== this.tipoFilter) return false
+        if (!q) return true
+        return String(i.nombre || '').toLowerCase().includes(q) ||
+          String(i.unidad || '').toLowerCase().includes(q) ||
+          String(i.descripcion || '').toLowerCase().includes(q)
+      })
     },
     total () {
       return this.carrito.reduce((a, it) => {
@@ -281,6 +348,16 @@ export default {
       return n.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     },
     money (v) { return this.to2(v) },
+    tipoInfo (tipo) {
+      return this.tiposInsumo.find(t => t.value === (tipo || null)) || this.tiposInsumo[this.tiposInsumo.length - 1]
+    },
+    stockColor (insumo) {
+      const stock = Number(insumo.stock || 0)
+      const min = Number(insumo.min_stock || 0)
+      if (stock <= 0) return 'text-negative'
+      if (min > 0 && stock <= min) return 'text-warning'
+      return 'text-grey-9'
+    },
 
     async insumosGet () {
       this.loading = true
@@ -430,3 +507,31 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.insumo-card {
+  border-radius: 10px;
+  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+.insumo-card:hover {
+  border-color: var(--q-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+.insumo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+.insumo-nombre {
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
