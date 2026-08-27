@@ -49,6 +49,7 @@ class CompraController extends Controller
 
             $compra = Compra::create([
                 'fecha'     => $request->input('fecha', now()->toDateString()),
+                'hora'      => $request->input('hora', now()->format('H:i:s')),
                 'proveedor' => $request->input('proveedor'),
                 'nota'      => $request->input('nota'),
                 'pago'      => $pago,

@@ -1,16 +1,47 @@
 <template>
   <q-page class="q-pa-md">
     <q-table
-      :rows="rows"
+      :rows="filteredRows"
       :columns="columns"
       dense
       wrap-cells
       flat
       bordered
       :rows-per-page-options="[0]"
-      title="Insumos"
       :filter="filter"
     >
+      <template v-slot:top-left>
+        <div>
+          <div class="text-h6">Insumos</div>
+          <div class="row items-center q-gutter-xs q-mt-xs">
+            <q-chip
+              clickable
+              dense
+              :color="tipoFilter === 'all' ? 'indigo' : 'grey-4'"
+              :text-color="tipoFilter === 'all' ? 'white' : 'black'"
+              icon="public"
+              @click="tipoFilter = 'all'"
+            >
+              Todo
+              <q-badge class="q-ml-xs" color="white" text-color="black" :label="rows.length"/>
+            </q-chip>
+
+            <q-chip
+              v-for="t in tiposDisponibles"
+              :key="`f-${String(t.value)}`"
+              clickable
+              dense
+              :color="tipoFilter === t.value ? t.color : 'grey-4'"
+              :text-color="tipoFilter === t.value ? 'white' : 'black'"
+              :icon="t.icon"
+              @click="tipoFilter = t.value"
+            >
+              {{ t.label }}
+              <q-badge class="q-ml-xs" color="white" text-color="black" :label="t.count"/>
+            </q-chip>
+          </div>
+        </div>
+      </template>
 <!--      <template v-slot:top-right>-->
 <!--        <q-btn-->
 <!--          color="positive"-->
@@ -126,16 +157,36 @@
       </template>
       <template v-slot:body-cell-tipo_insumo="props">
         <q-td :props="props">
-          <q-select
-            v-model="props.row.tipo_insumo"
-            :options="tiposInsumo"
-            emit-value
-            map-options
+          <q-chip
+            clickable
             dense
-            outlined
-            style="min-width: 150px"
-            @update:model-value="updateStock(props.row)"
-          />
+            :color="tipoInfo(props.row.tipo_insumo).color"
+            text-color="white"
+            :icon="tipoInfo(props.row.tipo_insumo).icon"
+            size="12px"
+          >
+            {{ tipoInfo(props.row.tipo_insumo).label }}
+            <q-icon name="expand_more" size="14px" class="q-ml-xs"/>
+            <q-menu auto-close>
+              <q-list dense style="min-width: 160px">
+                <q-item
+                  v-for="t in tiposInsumo"
+                  :key="`m-${String(t.value)}`"
+                  clickable
+                  @click="setTipo(props.row, t.value)"
+                >
+                  <q-item-section avatar>
+                    <q-icon :name="t.icon" :color="t.color"/>
+                  </q-item-section>
+                  <q-item-section>{{ t.label }}</q-item-section>
+                  <q-item-section side v-if="(props.row.tipo_insumo || null) === t.value">
+                    <q-icon name="check" color="positive"/>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
+            <q-tooltip>Clic para cambiar el tipo</q-tooltip>
+          </q-chip>
         </q-td>
       </template>
       <template v-slot:body-cell-no_contar="props">
@@ -151,6 +202,19 @@
       <template v-slot:body-cell-es_llevar="props">
         <q-td :props="props">
           <q-checkbox v-model="props.row.es_llevar" :true-value="1" :false-value="0" @update:model-value="updateStock(props.row)"/>
+        </q-td>
+      </template>
+      <template v-slot:body-cell-control_consumo="props">
+        <q-td :props="props">
+          <q-checkbox
+            v-model="props.row.control_consumo"
+            :true-value="1"
+            :false-value="0"
+            color="teal"
+            @update:model-value="updateStock(props.row)"
+          >
+            <q-tooltip>Controlar el consumo de este insumo</q-tooltip>
+          </q-checkbox>
         </q-td>
       </template>
     </q-table>
@@ -195,6 +259,18 @@
                 />
               </div>
               <div class="col-12">
+                <q-checkbox
+                  v-model="item.control_consumo"
+                  :true-value="1"
+                  :false-value="0"
+                  color="teal"
+                  label="Control de consumo"
+                />
+                <div class="text-caption text-grey-7 q-ml-sm">
+                  Marca este insumo para llevar control de su consumo.
+                </div>
+              </div>
+              <div class="col-12">
                 <q-input v-model="item.descripcion" type="textarea" autogrow label="Descripción" dense outlined />
               </div>
             </div>
@@ -226,11 +302,12 @@ export default {
         { label: 'LT',  value: 'LT'  },
         { label: 'PAQ', value: 'PAQ' },
       ],
+      tipoFilter: 'all',
       tiposInsumo: [
-        { label: 'Ninguno', value: null },
-        { label: 'Alimento', value: 'alimento' },
-        { label: 'Bebida', value: 'bebida' },
-        { label: 'Extra', value: 'extra' },
+        { label: 'Sin tipo', value: null, icon: 'help_outline', color: 'grey-7' },
+        { label: 'Alimento', value: 'alimento', icon: 'restaurant', color: 'orange-8' },
+        { label: 'Bebida', value: 'bebida', icon: 'local_bar', color: 'blue-7' },
+        { label: 'Extra', value: 'extra', icon: 'add_circle', color: 'purple-6' },
       ],
       columns: [
         { name: 'actions', label: 'Acciones', align: 'center' },
@@ -242,15 +319,37 @@ export default {
         { name: 'no_contar', label: 'No contar en stock', align: 'left', field: 'no_contar' },
         { name: 'es_mesa', label: 'Es mesa', align: 'left', field: 'es_mesa' },
         { name: 'es_llevar', label: 'Es llevar', align: 'left', field: 'es_llevar' },
+        { name: 'control_consumo', label: 'Control de consumo', align: 'center', field: 'control_consumo', sortable: true },
         { name: 'min_stock', label: 'Mínimo', align: 'left', field: 'min_stock' },
         { name: 'descripcion', label: 'Descripción', align: 'left', field: 'descripcion' },
       ]
+    }
+  },
+  computed: {
+    tiposDisponibles () {
+      return this.tiposInsumo
+        .map(t => ({
+          ...t,
+          count: this.rows.filter(r => (r.tipo_insumo || null) === t.value).length
+        }))
+        .filter(t => t.count > 0)
+    },
+    filteredRows () {
+      if (this.tipoFilter === 'all') return this.rows
+      return this.rows.filter(r => (r.tipo_insumo || null) === this.tipoFilter)
     }
   },
   mounted () {
     this.fetchRows()
   },
   methods: {
+    tipoInfo (tipo) {
+      return this.tiposInsumo.find(t => t.value === (tipo || null)) || this.tiposInsumo[0]
+    },
+    setTipo (row, value) {
+      row.tipo_insumo = value
+      this.updateStock(row)
+    },
     async updateStock (row) {
       if (!row.id) return
 
@@ -261,6 +360,7 @@ export default {
           no_contar: row.no_contar ? 1 : 0,
           es_mesa: row.es_mesa ? 1 : 0,
           es_llevar: row.es_llevar ? 1 : 0,
+          control_consumo: row.control_consumo ? 1 : 0,
           tipo_insumo: row.tipo_insumo || null
         })
         this.$alert?.success?.('Actualizado')
@@ -297,12 +397,13 @@ export default {
         costo: 0,
         min_stock: null,
         tipo_insumo: null,
+        control_consumo: 0,
         descripcion: ''
       }
       this.dlg = true
     },
     onEdit (row) {
-      this.item = { ...row, tipo_insumo: row.tipo_insumo || null }
+      this.item = { ...row, tipo_insumo: row.tipo_insumo || null, control_consumo: row.control_consumo ? 1 : 0 }
       this.dlg = true
     },
     async onDelete (id) {

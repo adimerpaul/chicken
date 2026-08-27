@@ -38,6 +38,10 @@ Route::middleware('auth:sanctum')->group(callback: function () {
 //    insumos
     Route::get('/insumos', [App\Http\Controllers\InsumoController::class, 'index']);
     Route::post('/insumos', [App\Http\Controllers\InsumoController::class, 'store']);
+    Route::post('/insumos/control-consumo', [App\Http\Controllers\ControlConsumoController::class, 'semana']);
+    Route::post('/insumos/control-consumo/excel', [App\Http\Controllers\ControlConsumoController::class, 'excel']);
+    Route::get('/inventario-inicial', [App\Http\Controllers\ControlConsumoController::class, 'inventarioIndex']);
+    Route::post('/inventario-inicial', [App\Http\Controllers\ControlConsumoController::class, 'inventarioStore']);
     Route::get('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'show']);
     Route::put('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'update']);
     Route::delete('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'destroy']);

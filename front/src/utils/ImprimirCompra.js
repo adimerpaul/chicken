@@ -55,7 +55,7 @@ export class ImprimirCompra {
         <div class="center sub">COMPRA DE INSUMOS</div>
         <hr>
         <div><b>N°:</b> ${compra.id || ''}</div>
-        <div><b>Fecha:</b> ${compra.fecha || ''}</div>
+        <div><b>Fecha:</b> ${compra.fecha || ''} ${String(compra.hora || '').substr(0, 5)}</div>
         <div><b>Proveedor:</b> ${compra.proveedor || '—'}</div>
         <div><b>Pago:</b> ${compra.pago || 'EFECTIVO'}</div>
         <div><b>Estado:</b> ${compra.estado || ''}</div>

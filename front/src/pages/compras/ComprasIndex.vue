@@ -111,7 +111,7 @@
                 <div class="row items-center no-wrap">
                   <div class="col">
                     <div class="text-weight-bold">Compra #{{ c.id }}</div>
-                    <div class="text-caption text-grey-7">{{ c.fecha }}</div>
+                    <div class="text-caption text-grey-7">{{ c.fecha }} {{ hora(c.hora) }}</div>
                   </div>
                   <q-chip
                     dense
@@ -172,6 +172,7 @@
                 <th style="width: 130px;">Opciones</th>
                 <th>#</th>
                 <th>Fecha</th>
+                <th>Hora</th>
                 <th>Proveedor</th>
                 <th>Comentario</th>
                 <th>Pago</th>
@@ -209,6 +210,7 @@
                 </td>
                 <td>{{ c.id }}</td>
                 <td>{{ c.fecha }}</td>
+                <td>{{ hora(c.hora) }}</td>
                 <td>{{ c.proveedor || '—' }}</td>
                 <td style="max-width: 280px;">
                   <div class="ellipsis" :title="c.nota || '—'">
@@ -239,7 +241,7 @@
               </tbody>
               <tbody v-else>
               <tr>
-                <td colspan="9" class="text-center">Sin compras</td>
+                <td colspan="10" class="text-center">Sin compras</td>
               </tr>
               </tbody>
             </q-markup-table>
@@ -265,7 +267,7 @@
           <div class="row q-col-gutter-xs q-mb-sm">
             <div class="col-12 col-sm-6">
               <div class="text-caption text-grey-7">Fecha</div>
-              <div class="text-body2 text-weight-medium">{{ compra ? compra.fecha : '' }}</div>
+              <div class="text-body2 text-weight-medium">{{ compra ? compra.fecha : '' }} {{ compra ? hora(compra.hora) : '' }}</div>
             </div>
             <div class="col-12 col-sm-6">
               <div class="text-caption text-grey-7">Proveedor</div>
@@ -355,13 +357,23 @@
 <script>
 import { ImprimirCompra } from 'src/utils/ImprimirCompra'
 
+// Fecha local (no UTC) en formato YYYY-MM-DD
+function fechaLocal (offsetDias = 0) {
+  const d = new Date()
+  d.setDate(d.getDate() + offsetDias)
+  const mes = String(d.getMonth() + 1).padStart(2, '0')
+  const dia = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mes}-${dia}`
+}
+
 export default {
   name: 'ComprasIndex',
   data () {
     return {
       f: {
-        ini: new Date().toISOString().substr(0, 10),
-        fin: new Date().toISOString().substr(0, 10),
+        // por defecto: la última semana (hoy y los 6 días anteriores)
+        ini: fechaLocal(-6),
+        fin: fechaLocal(0),
         q: ''
       },
       loading: false,
@@ -403,6 +415,11 @@ export default {
       })
     },
     to2 (v) { return this.money(v) },
+    // 'HH:mm:ss' -> 'HH:mm'
+    hora (v) {
+      if (!v) return '—'
+      return String(v).substr(0, 5)
+    },
     imprimirCompra (compra) {
       if (!compra) return
       ImprimirCompra.compra(compra)
@@ -456,10 +473,11 @@ export default {
         })
     },
     exportCSV () {
-      const header = ['ID', 'Fecha', 'Proveedor', 'Comentario', 'Pago', 'Detalle', 'Total', 'Estado']
+      const header = ['ID', 'Fecha', 'Hora', 'Proveedor', 'Comentario', 'Pago', 'Detalle', 'Total', 'Estado']
       const lines = this.rows.map(r => [
         r.id,
         r.fecha,
+        this.hora(r.hora),
         (r.proveedor || ''),
         (r.nota || ''),
         (r.pago || 'EFECTIVO'),

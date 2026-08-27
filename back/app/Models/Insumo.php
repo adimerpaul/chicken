@@ -20,6 +20,7 @@ class Insumo extends Model
         'es_mesa',
         'es_llevar',
         'tipo_insumo',
+        'control_consumo',
     ];
     protected $hidden = [
         'created_at',

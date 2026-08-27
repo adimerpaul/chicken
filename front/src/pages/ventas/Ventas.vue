@@ -162,7 +162,7 @@
               <q-select v-model="client.mesa" label="Mesa" outlined dense :options="['MESA','LLEVAR','DELIVERY','PEDIDO YA']"/>
             </div>
             <div class="col-6 col-md-2">
-              <q-select v-model="client.pago" label="Pago" outlined dense :options="['EFECTIVO','QR']"/>
+              <q-select v-model="client.pago" label="Pago" outlined dense :options="['EFECTIVO','QR','TARJETA']"/>
             </div>
 
             <div class="col-6 col-md-2">
@@ -213,11 +213,10 @@ export default {
       loading: false,
       products: [],
       llagua: true,
-      categories: [
+      categoriesMeta: [
         { id: 'Refrescos y Bebidas', name: 'Refrescos y Bebidas', icon: 'local_drink',  color: 'blue'   },
         { id: 'Acompañamientos',     name: 'Acompañamientos',     icon: 'restaurant',    color: 'teal'   },
         { id: 'Pollos',              name: 'Pollos',              icon: 'lunch_dining',  color: 'brown'  },
-        // agrega las demás si quieres…
       ],
       search: '',
       categoryId: '',
@@ -232,10 +231,23 @@ export default {
     }
   },
   computed: {
+    // Categorías presentes en los productos cargados + metadatos (icono/color) conocidos
+    categories () {
+      const metas = this.categoriesMeta
+      const vistas = []
+      this.products.forEach(p => {
+        const cat = String(p.categoria || '').trim()
+        if (cat && !vistas.includes(cat)) vistas.push(cat)
+      })
+      return vistas.map(cat => {
+        const meta = metas.find(m => m.id === cat)
+        return meta || { id: cat, name: cat, icon: 'category', color: 'indigo' }
+      })
+    },
     filteredProducts () {
-      const q = (this.search || '').toLowerCase()
+      const q = (this.search || '').toLowerCase().trim()
       return this.products.filter(p => {
-        const byCat  = !this.categoryId || p.category_id === this.categoryId
+        const byCat  = !this.categoryId || String(p.categoria || '').trim() === this.categoryId
         const byText = !q || (String(p.name||'').toLowerCase().includes(q) ||
           String(p.description||'').toLowerCase().includes(q))
         return byCat && byText
