@@ -261,6 +261,159 @@ class ControlConsumoController extends Controller
         ]);
     }
 
+    /**
+     * Control de consumo en formato tabla por producto (insumo controlado):
+     * fila "Inicio" con el inventario inicial y una fila por cada día con compras.
+     *
+     * POST /insumos/control-consumo-tabla
+     * body: { fechaInicio, fechaFin }
+     */
+    public function tabla(Request $request)
+    {
+        return response()->json($this->construirTabla($request));
+    }
+
+    /**
+     * Exporta el formato tabla a Excel (un bloque por producto).
+     * POST /insumos/control-consumo-tabla/excel
+     */
+    public function tablaExcel(Request $request)
+    {
+        $d = $this->construirTabla($request);
+
+        $spreadsheet = new Spreadsheet();
+        $hoja = $spreadsheet->getActiveSheet();
+        $hoja->setTitle('Insumos contables');
+
+        $hoja->setCellValue('A1', 'INSUMOS CONTABLES');
+        $hoja->mergeCells('A1:D1');
+        $hoja->getStyle('A1')->getFont()->setBold(true)->setSize(13);
+        $hoja->setCellValue('A2', 'Periodo: ' . $d['desde'] . ' al ' . $d['hasta']);
+        $hoja->mergeCells('A2:D2');
+        $hoja->getStyle('A2')->getFont()->setItalic(true)->getColor()->setRGB('555555');
+
+        $fila = 4;
+        foreach ($d['productos'] as $p) {
+            $ini = $fila;
+
+            $hoja->setCellValue('A' . $fila, mb_strtoupper($p['nombre']));
+            $hoja->mergeCells("A{$fila}:D{$fila}");
+            $hoja->getStyle("A{$fila}")->getFont()->setBold(true);
+            $hoja->getStyle("A{$fila}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $fila++;
+
+            $hoja->fromArray(['FECHA', 'KILOS', 'PRECIO', 'RELACION KILO/PRECIO'], null, 'A' . $fila);
+            $hoja->getStyle("A{$fila}:D{$fila}")->getFont()->setBold(true);
+            $hoja->getStyle("A{$fila}:D{$fila}")->getFill()
+                ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('ECEFF1');
+            $fila++;
+
+            $hoja->setCellValue('A' . $fila, 'Inicio');
+            $hoja->setCellValue('B' . $fila, $p['inicial']);
+            $fila++;
+
+            foreach ($p['filas'] as $r) {
+                $hoja->setCellValue('A' . $fila, Carbon::parse($r['fecha'])->format('d/m/Y'));
+                $hoja->setCellValue('B' . $fila, $r['kilos']);
+                $hoja->setCellValue('C' . $fila, $r['precio']);
+                $hoja->setCellValue('D' . $fila, $r['relacion']);
+                $fila++;
+            }
+
+            $hoja->getStyle('B' . ($ini + 2) . ':C' . ($fila - 1))->getNumberFormat()->setFormatCode('#,##0.00');
+            $hoja->getStyle('D' . ($ini + 2) . ':D' . ($fila - 1))->getNumberFormat()->setFormatCode('#,##0.00 "bs"');
+            $hoja->getStyle("A{$ini}:D" . ($fila - 1))->getBorders()->getOutline()
+                ->setBorderStyle(Border::BORDER_MEDIUM);
+            $hoja->getStyle('A' . ($ini + 1) . ':D' . ($fila - 1))->getBorders()->getInside()
+                ->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('BDBDBD');
+
+            $fila += 2;
+        }
+
+        foreach (['A' => 14, 'B' => 12, 'C' => 12, 'D' => 24] as $col => $w) {
+            $hoja->getColumnDimension($col)->setWidth($w);
+        }
+
+        $nombre = "insumos_contables_{$d['desde']}_{$d['hasta']}.xlsx";
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            (new Xlsx($spreadsheet))->save('php://output');
+        }, $nombre, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    private function construirTabla(Request $request): array
+    {
+        [$ini, $fin] = $this->rango($request);
+
+        // Compras agrupadas por insumo y día: kilos = cantidad comprada, precio = subtotal
+        $compras = DB::table('compra_detalles as cd')
+            ->join('compras as c', 'c.id', '=', 'cd.compra_id')
+            ->join('insumos as i', 'i.id', '=', 'cd.insumo_id')
+            ->whereNull('cd.deleted_at')
+            ->whereNull('c.deleted_at')
+            ->whereNull('i.deleted_at')
+            ->where('c.estado', '!=', 'ANULADO')
+            ->where('i.control_consumo', 1)
+            ->whereBetween('c.fecha', [$ini->toDateString(), $fin->toDateString()])
+            ->selectRaw('i.id as insumo_id, DATE(c.fecha) as fecha,
+                         SUM(cd.cantidad) as kilos,
+                         SUM(cd.subtotal) as precio')
+            ->groupBy('i.id', DB::raw('DATE(c.fecha)'))
+            ->orderBy('fecha')
+            ->get()
+            ->groupBy('insumo_id');
+
+        // Mismo criterio de inicial que el control de consumo
+        $inicialesRango = InventarioInicial::whereBetween('fecha', [$ini->toDateString(), $fin->toDateString()])
+            ->orderBy('fecha')
+            ->get()
+            ->groupBy('insumo_id');
+
+        $inicialesPrevias = InventarioInicial::where('fecha', '<', $ini->toDateString())
+            ->orderByDesc('fecha')
+            ->get()
+            ->groupBy('insumo_id');
+
+        $insumos = Insumo::where('control_consumo', 1)
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'unidad']);
+
+        $productos = [];
+        foreach ($insumos as $insumo) {
+            $reg = ($inicialesRango[$insumo->id] ?? collect())->first()
+                ?? ($inicialesPrevias[$insumo->id] ?? collect())->first();
+
+            $filas = ($compras[$insumo->id] ?? collect())->map(function ($r) {
+                $kilos  = round((float)$r->kilos, 2);
+                $precio = round((float)$r->precio, 2);
+                return [
+                    'fecha'    => substr((string)$r->fecha, 0, 10),
+                    'kilos'    => $kilos,
+                    'precio'   => $precio,
+                    // Bs por kilo
+                    'relacion' => $kilos > 0 ? round($precio / $kilos, 2) : null,
+                ];
+            })->values();
+
+            $productos[] = [
+                'id'            => $insumo->id,
+                'nombre'        => $insumo->nombre,
+                'unidad'        => $insumo->unidad,
+                'inicial'       => $reg ? (float)$reg->cantidad : 0,
+                'inicial_fecha' => $reg ? substr((string)$reg->fecha, 0, 10) : null,
+                'filas'         => $filas,
+            ];
+        }
+
+        return [
+            'desde'     => $ini->toDateString(),
+            'hasta'     => $fin->toDateString(),
+            'productos' => $productos,
+        ];
+    }
+
     // ------------------------------------------------------------------
     // Núcleo del reporte
     // ------------------------------------------------------------------

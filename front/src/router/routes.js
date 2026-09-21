@@ -11,6 +11,11 @@ const routes = [
         component: () => import('pages/insumos/ControlConsumo.vue'),
         meta: { requiresAuth: true }
       },
+      {
+        path: '/insumos/control-consumo-tabla',
+        component: () => import('pages/insumos/ControlConsumoTabla.vue'),
+        meta: { requiresAuth: true }
+      },
       // { path: 'compras-insumos', component: () => import('pages/compras/ComprasIndex.vue'), meta: { requiresAuth: true } },
       {
         path: '/compras',

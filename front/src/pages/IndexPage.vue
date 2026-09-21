@@ -1,35 +1,28 @@
 <template>
-  <q-page class="q-pa-sm bg-grey-3">
-    <!-- HEADER + PERIODO -->
-    <q-card flat class="hero q-mb-sm" v-if="$store.user.role=='Administrador'">
-      <q-card-section class="q-pa-sm q-pb-xs">
-        <div class="row items-start q-col-gutter-sm">
-          <div class="col">
-            <div class="text-h6 text-weight-bold">Dashboard general</div>
-            <div class="text-caption hero-sub">{{ periodoLabel }}</div>
+  <q-page class="q-pa-xs bg-grey-3">
+    <template v-if="$store.user.role=='Administrador'">
+      <!-- BARRA: TÍTULO + PERIODO -->
+      <q-card flat class="hero q-mb-xs">
+        <q-card-section class="q-py-xs q-px-sm row items-center q-col-gutter-xs">
+          <div class="col-12 col-sm-auto q-mr-sm">
+            <span class="text-subtitle1 text-weight-bold">Dashboard</span>
+            <span class="text-caption hero-sub q-ml-sm">{{ periodoLabel }}</span>
           </div>
           <div class="col-auto">
-            <q-btn round flat dense icon="refresh" color="white" :loading="loading" @click="fetchDashboard">
-              <q-tooltip>Actualizar</q-tooltip>
-            </q-btn>
-          </div>
-        </div>
-
-        <!-- Selector de periodo -->
-        <div class="row items-center q-col-gutter-sm q-mt-xs">
-          <div class="col-12 col-md-auto">
             <q-btn-toggle
               v-model="periodo"
               no-caps
               unelevated
               rounded
+              dense
+              size="sm"
               class="periodo-toggle"
               toggle-color="white"
               toggle-text-color="primary"
               color="transparent"
               text-color="white"
               :options="[
-                { label: 'Hoy', value: 'hoy', icon: 'today' },
+                { label: 'Hoy', value: 'hoy' },
                 { label: 'Ayer', value: 'ayer' },
                 { label: 'Semana', value: 'semana' },
                 { label: 'Mes', value: 'mes' },
@@ -38,402 +31,218 @@
               @update:model-value="onPeriodo"
             />
           </div>
-          <div class="col-6 col-md-2" v-if="periodo === 'rango'">
-            <q-input v-model="filters.date_from" type="date" dense outlined dark label="Desde"
-                     @update:model-value="fetchDashboard"/>
+          <template v-if="periodo === 'rango'">
+            <div class="col-6 col-sm-auto">
+              <q-input v-model="filters.date_from" type="date" dense outlined dark
+                       class="date-in" @update:model-value="fetchDashboard"/>
+            </div>
+            <div class="col-6 col-sm-auto">
+              <q-input v-model="filters.date_to" type="date" dense outlined dark
+                       class="date-in" @update:model-value="fetchDashboard"/>
+            </div>
+          </template>
+          <q-space/>
+          <div class="col-auto">
+            <q-btn round flat dense size="sm" icon="refresh" color="white" :loading="loading" @click="fetchDashboard">
+              <q-tooltip>Actualizar</q-tooltip>
+            </q-btn>
           </div>
-          <div class="col-6 col-md-2" v-if="periodo === 'rango'">
-            <q-input v-model="filters.date_to" type="date" dense outlined dark label="Hasta"
-                     @update:model-value="fetchDashboard"/>
-          </div>
-        </div>
-      </q-card-section>
+        </q-card-section>
+      </q-card>
 
-      <!-- BOTONES RÁPIDOS -->
-      <q-card-section class="q-pa-sm q-pt-none">
-        <div class="row q-col-gutter-sm">
-          <div class="col-6 col-sm-3">
-            <q-btn unelevated no-caps class="full-width quick-btn" icon="point_of_sale" label="Nueva venta"
-                   @click="$router.push({ path: '/ventas' })"/>
-          </div>
-          <div class="col-6 col-sm-3">
-            <q-btn unelevated no-caps class="full-width quick-btn" icon="shopping_cart" label="Nueva compra"
-                   @click="$router.push({ path: '/compras/insumos' })"/>
-          </div>
-          <div class="col-6 col-sm-3">
-            <q-btn unelevated no-caps class="full-width quick-btn" icon="inventory_2" label="Productos"
-                   @click="$router.push({ path: '/productos' })"/>
-          </div>
-          <div class="col-6 col-sm-3">
-            <q-btn unelevated no-caps class="full-width quick-btn" icon="insights" label="Reportes"
-                   @click="$router.push({ path: '/reportes' })"/>
-          </div>
-        </div>
-      </q-card-section>
-    </q-card>
-
-    <!-- KPIs -->
-    <div class="row q-col-gutter-sm q-mb-sm" v-if="$store.user.role=='Administrador'">
-      <div class="col-6 col-md-3" v-for="k in kpiCards" :key="k.label">
-        <q-card flat bordered class="kpi">
-          <q-card-section class="q-pa-sm">
-            <div class="row items-center no-wrap q-mb-xs">
+      <!-- KPIs -->
+      <div class="row q-col-gutter-xs q-mb-xs">
+        <div class="col-4 col-sm-4 col-md-2" v-for="k in kpiCards" :key="k.label">
+          <q-card flat bordered class="kpi">
+            <div class="row items-center no-wrap q-pa-xs">
               <div class="kpi-icon" :style="{ background: k.tint, color: k.color }">
-                <q-icon :name="k.icon" size="18px"/>
+                <q-icon :name="k.icon" size="16px"/>
               </div>
-              <div class="text-caption text-grey-7 q-ml-sm">{{ k.label }}</div>
+              <div class="q-ml-xs ellipsis">
+                <div class="kpi-label ellipsis">{{ k.label }}</div>
+                <div class="kpi-value ellipsis" :style="{ color: k.valueColor || '#212121' }">{{ k.value }}</div>
+              </div>
             </div>
-            <div class="text-h6 text-weight-bold">{{ k.value }}</div>
-            <div class="text-caption text-grey-6">{{ k.hint }}</div>
-          </q-card-section>
-        </q-card>
+          </q-card>
+        </div>
       </div>
-    </div>
 
-    <!-- GRÁFICOS -->
-    <div class="row q-col-gutter-sm" v-if="$store.user.role=='Administrador'">
-      <!-- Movimiento por día -->
-      <div class="col-12 col-md-8">
-        <q-card flat bordered class="full-height">
-          <q-card-section class="q-pa-sm q-pb-none row items-center">
-            <div class="col">
-              <div class="text-subtitle1 text-weight-bold">
-                {{ esUnDia ? 'Resumen del día' : 'Ingresos por día' }}
-              </div>
-              <div class="text-caption text-grey-6">{{ periodoLabel }}</div>
+      <!-- FILA 1: por día + tipo de pago + tipo de venta -->
+      <div class="row q-col-gutter-xs q-mb-xs">
+        <div class="col-12 col-md-6">
+          <q-card flat bordered class="full-height">
+            <div class="card-head row items-center no-wrap">
+              <div class="card-title">{{ esUnDia ? 'Ingresos y egresos por hora' : 'Ingresos y egresos por día' }}</div>
+              <q-space/>
+              <q-btn-toggle
+                v-model="chartTipo"
+                dense
+                unelevated
+                no-caps
+                size="sm"
+                toggle-color="primary"
+                color="grey-3"
+                text-color="grey-8"
+                :options="[
+                  { value: 'area', slot: 'area' },
+                  { value: 'bar', slot: 'bar' }
+                ]"
+              >
+                <template v-slot:area>
+                  <q-icon name="show_chart" size="18px"/>
+                  <q-tooltip>Vista de montaña</q-tooltip>
+                </template>
+                <template v-slot:bar>
+                  <q-icon name="bar_chart" size="18px"/>
+                  <q-tooltip>Vista de histograma</q-tooltip>
+                </template>
+              </q-btn-toggle>
             </div>
-            <q-btn-toggle
-              v-if="!esUnDia"
-              v-model="chartTipo"
-              dense
-              unelevated
-              no-caps
-              size="sm"
-              toggle-color="primary"
-              color="grey-3"
-              text-color="grey-8"
-              :options="[
-                { value: 'area', slot: 'area' },
-                { value: 'bar', slot: 'bar' }
-              ]"
-            >
-              <template v-slot:area>
-                <q-icon name="show_chart" size="18px"/>
-                <q-tooltip>Vista de área</q-tooltip>
-              </template>
-              <template v-slot:bar>
-                <q-icon name="bar_chart" size="18px"/>
-                <q-tooltip>Vista de barras</q-tooltip>
-              </template>
-            </q-btn-toggle>
-          </q-card-section>
-
-          <q-card-section class="q-pa-sm">
-            <!-- un solo día: número protagonista en vez de una barra suelta -->
-            <div v-if="esUnDia" class="q-py-lg text-center">
-              <div class="text-caption text-grey-6">Ingresos del día</div>
-              <div class="hero-number">{{ money(kpis.ingresos) }} <span class="text-h5">Bs</span></div>
-              <div class="row justify-center q-gutter-lg q-mt-md">
-                <div>
-                  <div class="text-h6 text-weight-bold">{{ kpis.ventas || 0 }}</div>
-                  <div class="text-caption text-grey-6">ventas</div>
-                </div>
-                <div>
-                  <div class="text-h6 text-weight-bold">{{ num(kpis.items) }}</div>
-                  <div class="text-caption text-grey-6">ítems</div>
-                </div>
-                <div>
-                  <div class="text-h6 text-weight-bold">{{ money(ticketPromedio) }}</div>
-                  <div class="text-caption text-grey-6">ticket prom. (Bs)</div>
-                </div>
-              </div>
-            </div>
-
             <apexchart
-              v-else-if="chartVentas.series.length"
+              v-if="chartVentas.series.length"
               :key="chartTipo"
               :type="chartTipo"
-              height="260"
+              height="210"
               :options="chartVentas.options"
               :series="chartVentas.series"
             />
-            <div v-else class="text-grey text-center q-pa-md text-caption">
-              No hay datos en el rango seleccionado.
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
+            <div v-else class="empty">Sin datos en el rango.</div>
+          </q-card>
+        </div>
 
-      <!-- Distribución por tipo de pago -->
-      <div class="col-12 col-md-4">
-        <q-card flat bordered class="full-height">
-          <q-card-section class="q-pa-sm q-pb-none">
-            <div class="text-subtitle1 text-weight-bold">Ventas por tipo de pago</div>
-            <div class="text-caption text-grey-6">Participación sobre el total cobrado</div>
-          </q-card-section>
-          <q-card-section class="q-pa-sm">
+        <div class="col-12 col-sm-6 col-md-3">
+          <q-card flat bordered class="full-height">
+            <div class="card-head">
+              <div class="card-title">Tipo de pago</div>
+            </div>
             <apexchart
               v-if="chartPagos.series.length"
               type="donut"
-              height="250"
+              height="210"
               :options="chartPagos.options"
               :series="chartPagos.series"
             />
-            <div v-else class="text-grey text-center q-pa-md text-caption">
-              No hay ventas por tipo de pago en este rango.
+            <div v-else class="empty">Sin ventas por tipo de pago.</div>
+          </q-card>
+        </div>
+
+        <div class="col-12 col-sm-6 col-md-3">
+          <q-card flat bordered class="full-height">
+            <div class="card-head">
+              <div class="card-title">Tipo de venta</div>
             </div>
-          </q-card-section>
-        </q-card>
+            <apexchart
+              v-if="chartMesas.series[0].data.length"
+              type="bar"
+              height="210"
+              :options="chartMesas.options"
+              :series="chartMesas.series"
+            />
+            <div v-else class="empty">Sin ventas en el rango.</div>
+          </q-card>
+        </div>
       </div>
-    </div>
 
-    <!-- ✅ NUEVO BLOQUE: PRODUCTOS POR CATEGORÍA -->
-    <div class="row q-col-gutter-sm q-mt-sm" v-if="$store.user.role=='Administrador'">
-      <div class="col-12">
-        <q-card flat bordered>
-          <q-card-section class="q-pa-sm row items-center">
-            <div>
-              <div class="text-subtitle1 text-weight-bold">
-                Productos (Pollos / Refrescos)
-              </div>
-              <div class="text-caption text-grey-7">
-                Resumen por producto dentro del rango seleccionado
+      <!-- FILA 2: productos (pestañas) + por usuario -->
+      <div class="row q-col-gutter-xs">
+        <div class="col-12 col-md-9">
+          <q-card flat bordered class="full-height">
+            <div class="row items-center no-wrap q-pr-xs">
+              <q-tabs
+                v-model="tabProductos"
+                dense
+                no-caps
+                inline-label
+                align="left"
+                active-color="primary"
+                indicator-color="primary"
+                class="text-grey-8"
+              >
+                <q-tab name="pollos" icon="lunch_dining">
+                  <span class="q-ml-xs">Pollos</span>
+                  <q-badge color="indigo" class="q-ml-xs">{{ money(totPollos.total_venta) }}</q-badge>
+                </q-tab>
+                <q-tab name="refrescos" icon="local_drink">
+                  <span class="q-ml-xs">Refrescos</span>
+                  <q-badge color="blue" class="q-ml-xs">{{ money(totRefrescos.total_venta) }}</q-badge>
+                </q-tab>
+              </q-tabs>
+              <q-space/>
+              <div class="text-caption text-grey-7 q-mr-xs gt-xs">
+                Total <b class="text-primary">{{ money(totGeneralProductos) }} Bs</b>
+                · {{ pctDelIngreso }}% del ingreso
               </div>
             </div>
-            <q-space />
+            <q-separator/>
 
-            <q-chip dense color="indigo" text-color="white" icon="lunch_dining" class="q-mr-xs">
-              Pollos: {{ pollosRows.length }}
-            </q-chip>
-            <q-chip dense color="blue" text-color="white" icon="local_drink" class="q-mr-sm">
-              Refrescos: {{ refrescosRows.length }}
-            </q-chip>
-
-            <q-btn
-              dense
-              flat
-              icon="refresh"
-              round
-              :loading="productosLoading"
-              @click="fetchProductosResumen"
-            >
-              <q-tooltip>Actualizar productos</q-tooltip>
-            </q-btn>
-          </q-card-section>
-
-          <q-separator />
-
-          <q-card-section class="q-pa-sm">
-            <!-- mini cards resumen -->
-            <div class="row q-col-gutter-sm q-mb-sm">
-              <div class="col-12 col-sm-4">
-                <q-card flat bordered class="mini">
-                  <q-card-section class="q-pa-sm">
-                    <div class="text-caption text-grey-7">Total Pollos</div>
-                    <div class="text-h6 text-weight-bold">
-                      {{ money(totPollos.total_venta) }} Bs
-                    </div>
-                    <div class="text-caption text-grey-7">
-                      Cantidad: <b>{{ num(totPollos.cantidad) }}</b>
-                    </div>
-                  </q-card-section>
-                </q-card>
+            <div class="row">
+              <!-- histograma -->
+              <div class="col-12 col-sm-7">
+                <apexchart
+                  v-if="productosTab.rows.length"
+                  :key="tabProductos"
+                  type="bar"
+                  :height="chartProductosHeight"
+                  :options="chartProductos.options"
+                  :series="chartProductos.series"
+                />
+                <div v-else-if="!productosLoading" class="empty">Sin ventas en este rango.</div>
               </div>
 
-              <div class="col-12 col-sm-4">
-                <q-card flat bordered class="mini">
-                  <q-card-section class="q-pa-sm">
-                    <div class="text-caption text-grey-7">Total Refrescos</div>
-                    <div class="text-h6 text-weight-bold">
-                      {{ money(totRefrescos.total_venta) }} Bs
-                    </div>
-                    <div class="text-caption text-grey-7">
-                      Cantidad: <b>{{ num(totRefrescos.cantidad) }}</b>
-                    </div>
-                  </q-card-section>
-                </q-card>
-              </div>
-
-              <div class="col-12 col-sm-4">
-                <q-card flat bordered class="mini">
-                  <q-card-section class="q-pa-sm">
-                    <div class="text-caption text-grey-7">Total (Pollos + Refrescos)</div>
-                    <div class="text-h6 text-weight-bold text-primary">
-                      {{ money(totGeneralProductos) }} Bs
-                    </div>
-                    <div class="text-caption text-grey-7">
-                      % del ingreso: <b>{{ pctDelIngreso }}%</b>
-                    </div>
-                  </q-card-section>
-                </q-card>
+              <!-- tabla compacta -->
+              <div class="col-12 col-sm-5">
+                <q-markup-table dense flat square separator="horizontal" class="tabla-prod">
+                  <thead>
+                  <tr>
+                    <th class="text-left">Producto</th>
+                    <th class="text-right">Cant.</th>
+                    <th class="text-right">Total</th>
+                    <th class="text-right">%</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  <tr v-for="r in productosTab.rows" :key="(r.product_id || r.name)">
+                    <td class="text-left ellipsis" style="max-width: 160px;">{{ r.name }}</td>
+                    <td class="text-right">{{ num(r.qty) }}</td>
+                    <td class="text-right text-weight-medium">{{ money(r.total) }}</td>
+                    <td class="text-right text-grey-7">{{ pct(r.total, productosTab.tot.total_venta) }}%</td>
+                  </tr>
+                  </tbody>
+                  <tfoot>
+                  <tr>
+                    <td class="text-right text-grey-7">TOTAL</td>
+                    <td class="text-right text-weight-bold">{{ num(productosTab.tot.cantidad) }}</td>
+                    <td class="text-right text-weight-bold">{{ money(productosTab.tot.total_venta) }}</td>
+                    <td class="text-right text-weight-bold">100%</td>
+                  </tr>
+                  </tfoot>
+                </q-markup-table>
               </div>
             </div>
 
-            <!-- tablas lado a lado -->
-            <div class="row q-col-gutter-md">
-              <!-- POLLOS -->
-              <div class="col-12 col-md-6">
-                <q-card flat bordered>
-                  <q-card-section class="row items-center q-pa-sm">
-                    <div class="text-subtitle1 text-weight-bold">
-                      <q-icon name="lunch_dining" class="q-mr-xs" />
-                      Pollos
-                    </div>
-                    <q-space />
-                    <q-chip dense color="indigo" text-color="white">
-                      {{ money(totPollos.total_venta) }} Bs
-                    </q-chip>
-                  </q-card-section>
+            <q-inner-loading :showing="productosLoading">
+              <q-spinner size="32px"/>
+            </q-inner-loading>
+          </q-card>
+        </div>
 
-                  <q-separator />
-
-                  <q-card-section class="q-pa-none">
-                    <q-markup-table dense flat bordered separator="horizontal">
-                      <thead>
-                      <tr>
-                        <th class="text-left">Producto</th>
-                        <th class="text-right" style="width: 90px;">Cant.</th>
-                        <th class="text-right" style="width: 120px;">Total</th>
-                        <th class="text-right" style="width: 90px;">%</th>
-                      </tr>
-                      </thead>
-
-                      <tbody>
-                      <tr v-for="r in pollosRows" :key="'po-' + (r.product_id || r.name)">
-                        <td class="text-left">
-                          <div class="row items-center no-wrap">
-                            <q-avatar size="38px" class="q-mr-sm">
-                              <img v-if="r.image" :src="img(r.image)" />
-                              <q-icon v-else name="image" />
-                            </q-avatar>
-
-                            <div>
-                              <div class="text-weight-medium">{{ r.name }}</div>
-                              <div class="text-caption text-grey-7">
-                                {{ r.categoria || 'Pollos' }}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td class="text-right text-weight-bold">
-                          {{ num(r.qty) }}
-                        </td>
-
-                        <td class="text-right text-weight-bold">
-                          {{ money(r.total) }}
-                        </td>
-
-                        <td class="text-right">
-                          <q-chip dense square color="grey-3" text-color="dark">
-                            {{ pct(r.total, totPollos.total_venta) }}%
-                          </q-chip>
-                        </td>
-                      </tr>
-
-                      <tr v-if="!productosLoading && pollosRows.length === 0">
-                        <td colspan="4" class="text-center text-grey q-pa-md">
-                          Sin ventas de Pollos en este rango.
-                        </td>
-                      </tr>
-                      </tbody>
-
-                      <tfoot>
-                      <tr>
-                        <td class="text-right text-grey-7">TOTAL</td>
-                        <td class="text-right text-weight-bold">{{ num(totPollos.cantidad) }}</td>
-                        <td class="text-right text-weight-bold">{{ money(totPollos.total_venta) }}</td>
-                        <td class="text-right text-weight-bold">100%</td>
-                      </tr>
-                      </tfoot>
-                    </q-markup-table>
-                  </q-card-section>
-                </q-card>
-              </div>
-
-              <!-- REFRESCOS -->
-              <div class="col-12 col-md-6">
-                <q-card flat bordered>
-                  <q-card-section class="row items-center q-pa-sm">
-                    <div class="text-subtitle1 text-weight-bold">
-                      <q-icon name="local_drink" class="q-mr-xs" />
-                      Refrescos y Bebidas
-                    </div>
-                    <q-space />
-                    <q-chip dense color="blue" text-color="white">
-                      {{ money(totRefrescos.total_venta) }} Bs
-                    </q-chip>
-                  </q-card-section>
-
-                  <q-separator />
-
-                  <q-card-section class="q-pa-none">
-                    <q-markup-table dense flat bordered separator="horizontal">
-                      <thead>
-                      <tr>
-                        <th class="text-left">Producto</th>
-                        <th class="text-right" style="width: 90px;">Cant.</th>
-                        <th class="text-right" style="width: 120px;">Total</th>
-                        <th class="text-right" style="width: 90px;">%</th>
-                      </tr>
-                      </thead>
-
-                      <tbody>
-                      <tr v-for="r in refrescosRows" :key="'re-' + (r.product_id || r.name)">
-                        <td class="text-left">
-                          <div class="row items-center no-wrap">
-                            <q-avatar size="38px" class="q-mr-sm">
-                              <img v-if="r.image" :src="img(r.image)" />
-                              <q-icon v-else name="image" />
-                            </q-avatar>
-
-                            <div>
-                              <div class="text-weight-medium">{{ r.name }}</div>
-                              <div class="text-caption text-grey-7">
-                                {{ r.categoria || 'Refrescos y Bebidas' }}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td class="text-right text-weight-bold">{{ num(r.qty) }}</td>
-                        <td class="text-right text-weight-bold">{{ money(r.total) }}</td>
-
-                        <td class="text-right">
-                          <q-chip dense square color="grey-3" text-color="dark">
-                            {{ pct(r.total, totRefrescos.total_venta) }}%
-                          </q-chip>
-                        </td>
-                      </tr>
-
-                      <tr v-if="!productosLoading && refrescosRows.length === 0">
-                        <td colspan="4" class="text-center text-grey q-pa-md">
-                          Sin ventas de Refrescos en este rango.
-                        </td>
-                      </tr>
-                      </tbody>
-
-                      <tfoot>
-                      <tr>
-                        <td class="text-right text-grey-7">TOTAL</td>
-                        <td class="text-right text-weight-bold">{{ num(totRefrescos.cantidad) }}</td>
-                        <td class="text-right text-weight-bold">{{ money(totRefrescos.total_venta) }}</td>
-                        <td class="text-right text-weight-bold">100%</td>
-                      </tr>
-                      </tfoot>
-                    </q-markup-table>
-                  </q-card-section>
-                </q-card>
-              </div>
+        <div class="col-12 col-md-3">
+          <q-card flat bordered class="full-height">
+            <div class="card-head">
+              <div class="card-title">Ingresos por usuario</div>
             </div>
-          </q-card-section>
-
-          <q-inner-loading :showing="productosLoading">
-            <q-spinner size="40px" />
-          </q-inner-loading>
-        </q-card>
+            <apexchart
+              v-if="chartUsuarios.series[0].data.length"
+              type="bar"
+              :height="Math.max(160, chartUsuarios.series[0].data.length * 34 + 40)"
+              :options="chartUsuarios.options"
+              :series="chartUsuarios.series"
+            />
+            <div v-else class="empty">Sin datos.</div>
+          </q-card>
+        </div>
       </div>
-    </div>
+    </template>
   </q-page>
 </template>
 
@@ -447,7 +256,7 @@ export default {
       loading: false,
       productosLoading: false,
       periodo: 'semana',
-      chartTipo: 'area',
+      tabProductos: 'pollos',
       // paleta categórica validada (contraste + daltonismo), en orden fijo
       paletaPagos: {
         EFECTIVO: '#E2542F',
@@ -469,12 +278,16 @@ export default {
         ticket_promedio: 0
       },
       porDia: [],
+      porHora: [],
       pagos: [],
+      mesas: [],
+      porUsuario: [],
       chartVentas: { series: [], options: {} },
+      chartTipo: 'area',
       chartPagos: { series: [], options: {} },
 
-      // ✅ NUEVO: productos resumen
-      productosResumen: [], // el backend devuelve todos y aquí filtramos
+      // el backend devuelve todos y aquí filtramos
+      productosResumen: [],
     }
   },
 
@@ -497,39 +310,14 @@ export default {
       return `${d(this.filters.date_from)} al ${d(this.filters.date_to)}`
     },
     kpiCards () {
+      const neto = this.toNum(this.kpis.neto)
       return [
-        {
-          label: 'Ingresos',
-          value: `${this.money(this.kpis.ingresos)} Bs`,
-          hint: 'Total cobrado en el periodo',
-          icon: 'payments',
-          color: '#166534',
-          tint: 'rgba(22, 101, 52, 0.12)'
-        },
-        {
-          label: 'Ventas',
-          value: this.num(this.kpis.ventas),
-          hint: 'Comprobantes emitidos',
-          icon: 'receipt_long',
-          color: '#1D4ED8',
-          tint: 'rgba(29, 78, 216, 0.12)'
-        },
-        {
-          label: 'Ítems vendidos',
-          value: this.num(this.kpis.items),
-          hint: 'Unidades de productos',
-          icon: 'lunch_dining',
-          color: '#B45309',
-          tint: 'rgba(180, 83, 9, 0.12)'
-        },
-        {
-          label: 'Ticket promedio',
-          value: `${this.money(this.ticketPromedio)} Bs`,
-          hint: 'Ingresos / ventas',
-          icon: 'trending_up',
-          color: '#E2542F',
-          tint: 'rgba(226, 84, 47, 0.12)'
-        }
+        { label: 'Ingresos', value: `${this.money(this.kpis.ingresos)} Bs`, icon: 'payments', color: '#166534', tint: 'rgba(22, 101, 52, 0.12)' },
+        { label: 'Egresos', value: `${this.money(this.kpis.egresos)} Bs`, icon: 'money_off', color: '#9D174D', tint: 'rgba(157, 23, 77, 0.12)' },
+        { label: 'Neto', value: `${this.money(neto)} Bs`, icon: 'account_balance_wallet', color: '#334155', tint: 'rgba(51, 65, 85, 0.12)', valueColor: neto < 0 ? '#C10015' : '#166534' },
+        { label: 'Ventas', value: this.num(this.kpis.ventas), icon: 'receipt_long', color: '#1D4ED8', tint: 'rgba(29, 78, 216, 0.12)' },
+        { label: 'Ítems vendidos', value: this.num(this.kpis.items), icon: 'lunch_dining', color: '#B45309', tint: 'rgba(180, 83, 9, 0.12)' },
+        { label: 'Ticket promedio', value: `${this.money(this.ticketPromedio)} Bs`, icon: 'trending_up', color: '#E2542F', tint: 'rgba(226, 84, 47, 0.12)' }
       ]
     },
     pollosRows () {
@@ -538,7 +326,6 @@ export default {
     refrescosRows () {
       return (this.productosResumen || []).filter(r => String(r.categoria || '').toLowerCase() === 'refrescos y bebidas')
     },
-
     totPollos () {
       return this.sumRows(this.pollosRows)
     },
@@ -552,6 +339,45 @@ export default {
       const ingreso = this.toNum(this.kpis.ingresos)
       if (!ingreso) return 0
       return this.pct(this.totGeneralProductos, ingreso)
+    },
+    productosTab () {
+      return this.tabProductos === 'pollos'
+        ? { rows: this.pollosRows, tot: this.totPollos, color: '#3F51B5' }
+        : { rows: this.refrescosRows, tot: this.totRefrescos, color: '#1D4ED8' }
+    },
+    chartProductosHeight () {
+      return Math.max(200, this.productosTab.rows.length * 26 + 40)
+    },
+    chartProductos () {
+      const rows = this.productosTab.rows
+      return {
+        series: [{ name: 'Total', data: rows.map(r => this.toNum(r.total)) }],
+        options: this.hbarOptions(rows.map(r => r.name), this.productosTab.color, {
+          tooltipExtra: i => ` · ${this.num(rows[i]?.qty)} u.`
+        })
+      }
+    },
+    chartMesas () {
+      // "mesa" también guarda marcas internas (INGRESO/GASTO/CAJA) que no son tipos de venta
+      const internos = ['INGRESO', 'GASTO', 'CAJA']
+      const rows = (this.mesas || [])
+        .filter(m => !internos.includes(String(m.mesa || '').toUpperCase()))
+        .sort((a, b) => this.toNum(b.total) - this.toNum(a.total))
+      return {
+        series: [{ name: 'Total', data: rows.map(r => this.toNum(r.total)) }],
+        options: this.hbarOptions(rows.map(r => this.$filters?.textCapitalize ? this.$filters.textCapitalize(r.mesa || 'SN') : (r.mesa || 'SN')), '#0D9488', {
+          tooltipExtra: i => ` · ${this.num(rows[i]?.items)} ventas`
+        })
+      }
+    },
+    chartUsuarios () {
+      const rows = [...(this.porUsuario || [])]
+        .filter(r => this.toNum(r.ingreso) > 0)
+        .sort((a, b) => this.toNum(b.ingreso) - this.toNum(a.ingreso))
+      return {
+        series: [{ name: 'Ingreso', data: rows.map(r => this.toNum(r.ingreso)) }],
+        options: this.hbarOptions(rows.map(r => r.name), '#E2542F')
+      }
     }
   },
 
@@ -599,12 +425,14 @@ export default {
 
         this.kpis = data?.kpis || this.kpis
         this.porDia = data?.por_dia || []
+        this.porHora = data?.por_hora || []
         this.pagos = data?.pagos || []
+        this.mesas = data?.mesas || []
+        this.porUsuario = data?.por_usuario || []
 
         this.buildChartVentas()
         this.buildChartPagos()
 
-        // ✅ NUEVO: productos por categorías
         await this.fetchProductosResumen()
       } catch (e) {
         const msg = e?.response?.data?.message || 'No se pudo cargar el dashboard'
@@ -618,7 +446,6 @@ export default {
       this.productosLoading = true
       try {
         const params = { ...this.filters }
-        // ✅ nuevo endpoint
         const { data } = await this.$axios.get('reportes/productos-resumen', { params })
         this.productosResumen = Array.isArray(data) ? data : []
       } catch (e) {
@@ -630,57 +457,68 @@ export default {
     },
 
     buildChartVentas () {
-      const categories = this.porDia.map(r => moment(r.date).format('ddd DD/MM'))
-      const ingresos = this.porDia.map(r => Number(r.ingreso || 0))
+      let categories, ingresos, egresos
+      if (this.esUnDia) {
+        // un solo día: histograma por hora, rellenando las horas sin movimiento
+        const map = {}
+        this.porHora.forEach(r => { map[Number(r.hora)] = r })
+        const horas = Object.keys(map).map(Number)
+        const desde = horas.length ? Math.min(...horas) : 0
+        const hasta = horas.length ? Math.max(...horas) : -1
+        categories = []; ingresos = []; egresos = []
+        for (let h = desde; h <= hasta; h++) {
+          categories.push(String(h).padStart(2, '0') + ':00')
+          ingresos.push(this.toNum(map[h]?.ingreso))
+          egresos.push(this.toNum(map[h]?.egreso))
+        }
+      } else {
+        categories = this.porDia.map(r => moment(r.date).format('ddd DD/MM'))
+        ingresos = this.porDia.map(r => this.toNum(r.ingreso))
+        egresos = this.porDia.map(r => this.toNum(r.egreso))
+      }
 
       this.chartVentas = {
-        // una sola serie: un solo tono, sin leyenda (el título ya la nombra)
-        series: [{ name: 'Ingresos', data: ingresos }],
+        series: categories.length
+          ? [{ name: 'Ingresos', data: ingresos }, { name: 'Egresos', data: egresos }]
+          : [],
         options: {
           chart: {
             type: this.chartTipo,
             toolbar: { show: false },
             fontFamily: 'inherit',
-            animations: { speed: 400 },
+            animations: { speed: 300 },
             zoom: { enabled: false }
           },
-          colors: ['#E2542F'],
+          colors: ['#E2542F', '#334155'],
           plotOptions: {
             bar: {
-              columnWidth: categories.length > 15 ? '70%' : '45%',
-              borderRadius: 4,
+              columnWidth: categories.length > 15 ? '85%' : (categories.length <= 1 ? '30%' : '65%'),
+              borderRadius: 3,
               borderRadiusApplication: 'end'
             }
           },
-          // vista "cerros": curva suave con degradado bajo la línea
-          stroke: {
-            curve: 'smooth',
-            width: this.chartTipo === 'area' ? 3 : 0,
-            lineCap: 'round'
-          },
+          // montaña: curva suave con degradado; histograma: barras con separación
+          stroke: this.chartTipo === 'area'
+            ? { show: true, curve: 'smooth', width: 2.5, lineCap: 'round' }
+            : { show: true, width: 1, colors: ['transparent'] },
           fill: this.chartTipo === 'area'
             ? {
                 type: 'gradient',
-                gradient: {
-                  shadeIntensity: 1,
-                  opacityFrom: 0.45,
-                  opacityTo: 0.05,
-                  stops: [0, 90, 100]
-                }
+                gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] }
               }
             : { type: 'solid' },
           markers: {
-            size: 0,
+            size: this.chartTipo === 'area' && categories.length <= 1 ? 5 : 0,
             strokeWidth: 2,
             strokeColors: '#fff',
-            hover: { size: 6 }
+            hover: { size: 5 }
           },
           dataLabels: { enabled: false },
           grid: {
             borderColor: '#EEEEEE',
             strokeDashArray: 4,
             xaxis: { lines: { show: false } },
-            padding: { left: 8, right: 8 }
+            padding: { left: 4, right: 4, top: -10, bottom: -4 }
           },
           xaxis: {
             categories,
@@ -688,20 +526,20 @@ export default {
             axisTicks: { show: false },
             labels: {
               rotate: categories.length > 10 ? -45 : 0,
-              style: { colors: '#757575', fontSize: '11px' }
+              style: { colors: '#757575', fontSize: '10px' }
             }
           },
           yaxis: {
             labels: {
-              style: { colors: '#9E9E9E', fontSize: '11px' },
+              style: { colors: '#9E9E9E', fontSize: '10px' },
               formatter: v => this.num(Math.round(Number(v || 0)))
             }
           },
-          legend: { show: false },
+          legend: { show: true, position: 'top', horizontalAlign: 'right', fontSize: '11px', offsetY: -4, markers: { width: 8, height: 8, radius: 2 } },
           states: { hover: { filter: { type: 'darken', value: 0.9 } } },
           tooltip: {
-            theme: 'light',
-            x: { show: true },
+            shared: true,
+            intersect: false,
             y: { formatter: val => this.money(val) + ' Bs' }
           }
         }
@@ -718,41 +556,43 @@ export default {
       this.chartPagos = {
         series,
         options: {
-          chart: { fontFamily: 'inherit', animations: { speed: 400 } },
+          chart: { fontFamily: 'inherit', animations: { speed: 300 } },
           labels,
           colors,
           stroke: { width: 2, colors: ['#fff'] },
           legend: {
             position: 'bottom',
-            fontSize: '12px',
-            markers: { width: 10, height: 10, radius: 3 },
+            fontSize: '11px',
+            itemMargin: { horizontal: 4, vertical: 0 },
+            markers: { width: 8, height: 8, radius: 2 },
             formatter: (label, opts) => {
               const val = opts.w.globals.series[opts.seriesIndex]
-              return `${label} · ${this.money(val)} Bs`
+              return `${label} ${this.money(val)}`
             }
           },
           dataLabels: {
             enabled: true,
-            style: { fontSize: '11px', fontWeight: 600 },
+            style: { fontSize: '10px', fontWeight: 600 },
             dropShadow: { enabled: false },
             formatter: val => `${Math.round(val)}%`
           },
           plotOptions: {
             pie: {
               donut: {
-                size: '65%',
+                size: '62%',
                 labels: {
                   show: true,
                   value: {
-                    fontSize: '20px',
+                    fontSize: '15px',
                     fontWeight: 700,
                     color: '#212121',
+                    offsetY: 2,
                     formatter: val => this.money(val)
                   },
                   total: {
                     show: true,
                     label: 'Total Bs',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     color: '#757575',
                     formatter: w => this.money(
                       w.globals.seriesTotals.reduce((a, b) => a + b, 0)
@@ -763,6 +603,51 @@ export default {
             }
           },
           tooltip: { y: { formatter: val => this.money(val) + ' Bs' } }
+        }
+      }
+    },
+
+    // histograma horizontal compacto (ranking)
+    hbarOptions (categories, color, { tooltipExtra } = {}) {
+      return {
+        chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', animations: { speed: 300 } },
+        colors: [color],
+        plotOptions: {
+          bar: {
+            horizontal: true,
+            barHeight: '70%',
+            borderRadius: 3,
+            borderRadiusApplication: 'end',
+            dataLabels: { position: 'top' }
+          }
+        },
+        dataLabels: {
+          enabled: true,
+          offsetX: 28,
+          style: { fontSize: '10px', fontWeight: 600, colors: ['#424242'] },
+          formatter: v => this.num(Math.round(v))
+        },
+        grid: {
+          borderColor: '#EEEEEE',
+          strokeDashArray: 4,
+          yaxis: { lines: { show: false } },
+          padding: { left: 0, right: 30, top: -14, bottom: -6 }
+        },
+        xaxis: {
+          categories,
+          axisBorder: { show: false },
+          axisTicks: { show: false },
+          labels: { style: { colors: '#9E9E9E', fontSize: '10px' }, formatter: v => this.num(Math.round(Number(v || 0))) }
+        },
+        yaxis: {
+          labels: { maxWidth: 130, style: { colors: '#424242', fontSize: '11px' } }
+        },
+        legend: { show: false },
+        tooltip: {
+          y: {
+            formatter: (val, { dataPointIndex }) =>
+              this.money(val) + ' Bs' + (tooltipExtra ? tooltipExtra(dataPointIndex) : '')
+          }
         }
       }
     },
@@ -791,11 +676,6 @@ export default {
       return Math.round((p / t) * 100)
     },
 
-    img (path) {
-      // path puede ser "productos/xxx.webp"
-      return `${this.$url}/../storage/${path}`
-    },
-
     money (v) {
       return Number(v || 0).toLocaleString('es-BO', {
         minimumFractionDigits: 2,
@@ -812,55 +692,72 @@ export default {
 </script>
 
 <style scoped>
-/* Cabecera */
+/* Barra superior */
 .hero {
-  border-radius: 16px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #e2542f 0%, #c2431c 55%, #a33314 100%);
   color: #fff;
 }
 .hero-sub {
-  color: rgba(255, 255, 255, 0.78);
-}
-.quick-btn {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-  border-radius: 10px;
-  font-weight: 600;
-}
-.quick-btn:hover {
-  background: rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.8);
 }
 .periodo-toggle {
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 999px;
-  padding: 2px;
+  padding: 1px;
+}
+.date-in {
+  min-width: 140px;
 }
 
 /* KPIs */
 .kpi {
-  border-radius: 14px;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
-}
-.kpi:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  border-radius: 8px;
 }
 .kpi-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
 }
-
-.hero-number {
-  font-size: 44px;
+.kpi-label {
+  font-size: 11px;
   line-height: 1.1;
-  font-weight: 800;
-  color: #a33314;
+  color: #757575;
+}
+.kpi-value {
+  font-size: 15px;
+  line-height: 1.25;
+  font-weight: 700;
 }
 
-.mini { border-radius: 14px; }
+/* Tarjetas */
+.card-head {
+  padding: 6px 8px 0;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #424242;
+}
+.empty {
+  color: #9e9e9e;
+  font-size: 12px;
+  text-align: center;
+  padding: 24px 8px;
+}
+
+.tabla-prod {
+  max-height: 340px;
+  overflow: auto;
+}
+.tabla-prod th,
+.tabla-prod td {
+  font-size: 12px;
+  padding: 2px 6px;
+  height: 24px;
+}
 </style>

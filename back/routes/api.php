@@ -40,6 +40,8 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::post('/insumos', [App\Http\Controllers\InsumoController::class, 'store']);
     Route::post('/insumos/control-consumo', [App\Http\Controllers\ControlConsumoController::class, 'semana']);
     Route::post('/insumos/control-consumo/excel', [App\Http\Controllers\ControlConsumoController::class, 'excel']);
+    Route::post('/insumos/control-consumo-tabla', [App\Http\Controllers\ControlConsumoController::class, 'tabla']);
+    Route::post('/insumos/control-consumo-tabla/excel', [App\Http\Controllers\ControlConsumoController::class, 'tablaExcel']);
     Route::get('/inventario-inicial', [App\Http\Controllers\ControlConsumoController::class, 'inventarioIndex']);
     Route::post('/inventario-inicial', [App\Http\Controllers\ControlConsumoController::class, 'inventarioStore']);
     Route::get('/insumos/{id}', [App\Http\Controllers\InsumoController::class, 'show']);

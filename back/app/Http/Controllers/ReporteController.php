@@ -214,6 +214,18 @@ class ReporteController extends Controller
                 return $r;
             });
 
+        // Serie por hora (para vistas de un solo día)
+        $por_hora = (clone $base)
+            ->select(
+                DB::raw('CAST(SUBSTR(v.time, 1, 2) AS UNSIGNED) as hora'),
+                DB::raw("SUM(CASE WHEN v.type='INGRESO' AND v.status!='ANULADO' AND EXISTS (SELECT 1 FROM venta_detalles vd WHERE vd.venta_id = v.id AND vd.deleted_at IS NULL) THEN v.total ELSE 0 END) as ingreso"),
+                DB::raw("SUM(CASE WHEN v.type='EGRESO'  AND v.status!='ANULADO' THEN v.total ELSE 0 END) as egreso"),
+                DB::raw("SUM(CASE WHEN v.type='INGRESO' AND v.status!='ANULADO' THEN 1 ELSE 0 END) as ventas")
+            )
+            ->groupBy('hora')
+            ->orderBy('hora')
+            ->get();
+
         // Totales por usuario
         $por_usuario = (clone $base)
             ->leftJoin('users as u', 'u.id', '=', 'v.user_id')
@@ -250,6 +262,7 @@ class ReporteController extends Controller
             'qr'          => ['total' => round($qr_total, 2), 'items' => (int)$qr_items],
             'mesas'       => $mesas,
             'por_dia'     => $por_dia,
+            'por_hora'    => $por_hora,
             'por_usuario' => $por_usuario,
         ]);
     }

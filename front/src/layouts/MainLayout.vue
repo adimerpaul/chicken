@@ -292,7 +292,8 @@ const menu = [
     items: [
       { label: 'Productos', icon: 'shopping_bag', to: '/productos', perm: 'Productos' },
       { label: 'Insumos', icon: 'inventory_2', to: '/insumos', perm: 'Insumos' },
-      { label: 'Control de consumo', icon: 'fact_check', to: '/insumos/control-consumo', perm: 'Insumos' }
+      { label: 'Control de consumo', icon: 'fact_check', to: '/insumos/control-consumo', perm: 'Insumos' },
+      { label: 'Control consumo (tabla)', icon: 'table_view', to: '/insumos/control-consumo-tabla', perm: 'Insumos' }
     ]
   },
   {
@@ -332,6 +333,7 @@ const titles = {
   '/productos': ['Productos', 'Catálogo de productos de venta'],
   '/insumos': ['Insumos', 'Materia prima y control de stock'],
   '/insumos/control-consumo': ['Control de consumo', 'Consumo semanal de insumos controlados'],
+  '/insumos/control-consumo-tabla': ['Insumos contables', 'Compras por producto: kilos, precio y relación'],
   '/reportes': ['Reportes', 'Indicadores del negocio'],
   '/reportes-sistema': ['Reportes del sistema', 'Auditoría y actividad'],
   '/ventas-resumen': ['Resumen de ventas', 'Consolidado por periodo'],
