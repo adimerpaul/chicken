@@ -8,7 +8,7 @@
     <div class="col-6 col-md-2" v-for="product in products" :key="product.id">
       <q-card class="q-ma-xs cursor-pointer" flat bordered @click="productClick(product)">
         <q-img
-          :src="`${$url}../images/${product.image}`"
+          :src="`${$url}/../images/${product.image}`"
           spinner-color="white"
           spinner-size="40"
           style="height: 120px;background: linear-gradient(rgba(74,20,140,0.5), rgba(74,20,140,0));"

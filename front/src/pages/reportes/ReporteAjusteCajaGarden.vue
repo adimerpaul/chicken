@@ -325,7 +325,8 @@ export default {
       pagoOptions: [
         { label: 'Todos', value: null },
         { label: 'EFECTIVO', value: 'EFECTIVO' },
-        { label: 'QR', value: 'QR' }
+        { label: 'QR', value: 'QR' },
+        { label: 'TARJETA', value: 'TARJETA' }
       ]
     }
   },
