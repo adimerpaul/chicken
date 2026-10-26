@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CierreCaja;
+use App\Models\InventarioCajaMovimiento;
 use App\Models\Venta;
 use Illuminate\Http\Request;
 
@@ -29,13 +30,10 @@ class CierreCajaController extends Controller
         $usuarios = $ventas->groupBy('user_id')->map(function ($rows) {
             $user = $rows->first()->user;
 
-            $efSistema = $rows->where('type', 'INGRESO')
-                ->where('pago', 'EFECTIVO')
-                ->sum('total');
+            // por montos: así el pago MIXTO reparte lo cobrado en efectivo y QR
+            $efSistema = $rows->where('type', 'INGRESO')->sum('monto_efectivo');
 
-            $qrSistema = $rows->where('type', 'INGRESO')
-                ->where('pago', 'QR')
-                ->sum('total');
+            $qrSistema = $rows->where('type', 'INGRESO')->sum('monto_qr');
 
             // Buscar cierre del usuario (si existe)
             $cierre = CierreCaja::where('user_id', $user->id)
@@ -73,9 +71,9 @@ class CierreCajaController extends Controller
             ->where('user_id', $userId)
             ->get();
 
-        $ingresosEfectivo = (float) $ventas->where('type', 'INGRESO')->where('pago', 'EFECTIVO')->sum('total');
-        $ingresosQr       = (float) $ventas->where('type', 'INGRESO')->where('pago', 'QR')->sum('total');
-        $ingresosTarjeta  = (float) $ventas->where('type', 'INGRESO')->where('pago', 'TARJETA')->sum('total');
+        $ingresosEfectivo = (float) $ventas->where('type', 'INGRESO')->sum('monto_efectivo');
+        $ingresosQr       = (float) $ventas->where('type', 'INGRESO')->sum('monto_qr');
+        $ingresosTarjeta  = (float) $ventas->where('type', 'INGRESO')->sum('monto_tarjeta');
         $ingresosOnline   = (float) $ventas->where('type', 'INGRESO')->where('pago', 'ONLINE')->sum('total');
 
         $totalCajaIni     = (float) $ventas->where('type', 'CAJA')->sum('total');
@@ -144,6 +142,9 @@ class CierreCajaController extends Controller
 
         $cierre->esperado_total     = $esperadoTotal;
         $cierre->contado_total      = $contadoTotal;
+
+        // inventario de refrescos del vendedor (inicial + aumentos - vendido)
+        $cierre->inventario         = InventarioCajaMovimiento::resumen($userId, $date);
 
         return $cierre;
     }

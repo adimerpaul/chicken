@@ -24,7 +24,7 @@
               :options="[
                 { label: 'Hoy', value: 'hoy' },
                 { label: 'Ayer', value: 'ayer' },
-                { label: 'Semana', value: 'semana' },
+                { label: '7 días', value: 'semana' },
                 { label: 'Mes', value: 'mes' },
                 { label: 'Rango', value: 'rango' }
               ]"
@@ -102,7 +102,7 @@
               v-if="chartVentas.series.length"
               :key="chartTipo"
               :type="chartTipo"
-              height="210"
+              height="175"
               :options="chartVentas.options"
               :series="chartVentas.series"
             />
@@ -118,7 +118,7 @@
             <apexchart
               v-if="chartPagos.series.length"
               type="donut"
-              height="210"
+              height="175"
               :options="chartPagos.options"
               :series="chartPagos.series"
             />
@@ -134,7 +134,7 @@
             <apexchart
               v-if="chartMesas.series[0].data.length"
               type="bar"
-              height="210"
+              height="175"
               :options="chartMesas.options"
               :series="chartMesas.series"
             />
@@ -234,7 +234,7 @@
             <apexchart
               v-if="chartUsuarios.series[0].data.length"
               type="bar"
-              :height="Math.max(160, chartUsuarios.series[0].data.length * 34 + 40)"
+              :height="Math.max(130, chartUsuarios.series[0].data.length * 24 + 30)"
               :options="chartUsuarios.options"
               :series="chartUsuarios.series"
             />
@@ -284,6 +284,31 @@ export default {
       porUsuario: [],
       chartVentas: { series: [], options: {} },
       chartTipo: 'area',
+      diasEs: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+      apexLocale: {
+        defaultLocale: 'es',
+        locales: [{
+          name: 'es',
+          options: {
+            months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            shortMonths: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+            days: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+            shortDays: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+            toolbar: {
+              exportToSVG: 'Descargar SVG',
+              exportToPNG: 'Descargar PNG',
+              exportToCSV: 'Descargar CSV',
+              menu: 'Menú',
+              selection: 'Selección',
+              selectionZoom: 'Zoom de selección',
+              zoomIn: 'Acercar',
+              zoomOut: 'Alejar',
+              pan: 'Mover',
+              reset: 'Restablecer zoom'
+            }
+          }
+        }]
+      },
       chartPagos: { series: [], options: {} },
 
       // el backend devuelve todos y aquí filtramos
@@ -346,7 +371,7 @@ export default {
         : { rows: this.refrescosRows, tot: this.totRefrescos, color: '#1D4ED8' }
     },
     chartProductosHeight () {
-      return Math.max(200, this.productosTab.rows.length * 26 + 40)
+      return Math.max(170, this.productosTab.rows.length * 20 + 30)
     },
     chartProductos () {
       const rows = this.productosTab.rows
@@ -403,8 +428,9 @@ export default {
         this.filters.date_from = fmt(ayer)
         this.filters.date_to = fmt(ayer)
       } else if (p === 'semana') {
-        this.filters.date_from = fmt(moment().startOf('isoWeek'))
-        this.filters.date_to = fmt(moment().endOf('isoWeek'))
+        // siempre los últimos 7 días contando hoy, no desde el lunes
+        this.filters.date_from = fmt(moment().subtract(6, 'days'))
+        this.filters.date_to = fmt(moment())
       } else if (p === 'mes') {
         this.filters.date_from = fmt(moment().startOf('month'))
         this.filters.date_to = fmt(moment().endOf('month'))
@@ -472,9 +498,17 @@ export default {
           egresos.push(this.toNum(map[h]?.egreso))
         }
       } else {
-        categories = this.porDia.map(r => moment(r.date).format('ddd DD/MM'))
-        ingresos = this.porDia.map(r => this.toNum(r.ingreso))
-        egresos = this.porDia.map(r => this.toNum(r.egreso))
+        // rellena los días sin movimiento para que la curva no salte
+        const map = {}
+        this.porDia.forEach(r => { map[moment(r.date).format('YYYY-MM-DD')] = r })
+        categories = []; ingresos = []; egresos = []
+        const fin = moment(this.filters.date_to)
+        for (let d = moment(this.filters.date_from); d.isSameOrBefore(fin, 'day'); d.add(1, 'day')) {
+          const k = d.format('YYYY-MM-DD')
+          categories.push(this.diasEs[d.day()] + ' ' + d.format('DD/MM'))
+          ingresos.push(this.toNum(map[k]?.ingreso))
+          egresos.push(this.toNum(map[k]?.egreso))
+        }
       }
 
       this.chartVentas = {
@@ -487,7 +521,8 @@ export default {
             toolbar: { show: false },
             fontFamily: 'inherit',
             animations: { speed: 300 },
-            zoom: { enabled: false }
+            zoom: { enabled: false },
+            ...this.apexLocale
           },
           colors: ['#E2542F', '#334155'],
           plotOptions: {
@@ -499,12 +534,12 @@ export default {
           },
           // montaña: curva suave con degradado; histograma: barras con separación
           stroke: this.chartTipo === 'area'
-            ? { show: true, curve: 'smooth', width: 2.5, lineCap: 'round' }
+            ? { show: true, curve: 'monotoneCubic', width: 2.5, lineCap: 'round' }
             : { show: true, width: 1, colors: ['transparent'] },
           fill: this.chartTipo === 'area'
             ? {
                 type: 'gradient',
-                gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] }
+                gradient: { shadeIntensity: 1, opacityFrom: 0.55, opacityTo: 0.02, stops: [0, 95, 100] }
               }
             : { type: 'solid' },
           markers: {
@@ -518,7 +553,7 @@ export default {
             borderColor: '#EEEEEE',
             strokeDashArray: 4,
             xaxis: { lines: { show: false } },
-            padding: { left: 4, right: 4, top: -10, bottom: -4 }
+            padding: { left: 2, right: 2, top: -18, bottom: -8 }
           },
           xaxis: {
             categories,
@@ -526,6 +561,7 @@ export default {
             axisTicks: { show: false },
             labels: {
               rotate: categories.length > 10 ? -45 : 0,
+              hideOverlappingLabels: true,
               style: { colors: '#757575', fontSize: '10px' }
             }
           },
@@ -535,7 +571,7 @@ export default {
               formatter: v => this.num(Math.round(Number(v || 0)))
             }
           },
-          legend: { show: true, position: 'top', horizontalAlign: 'right', fontSize: '11px', offsetY: -4, markers: { width: 8, height: 8, radius: 2 } },
+          legend: { show: true, position: 'top', horizontalAlign: 'right', fontSize: '10px', offsetY: -6, height: 16, markers: { width: 8, height: 8, radius: 2 } },
           states: { hover: { filter: { type: 'darken', value: 0.9 } } },
           tooltip: {
             shared: true,
@@ -556,14 +592,14 @@ export default {
       this.chartPagos = {
         series,
         options: {
-          chart: { fontFamily: 'inherit', animations: { speed: 300 } },
+          chart: { fontFamily: 'inherit', animations: { speed: 300 }, ...this.apexLocale },
           labels,
           colors,
           stroke: { width: 2, colors: ['#fff'] },
           legend: {
             position: 'bottom',
-            fontSize: '11px',
-            itemMargin: { horizontal: 4, vertical: 0 },
+            fontSize: '10px',
+            itemMargin: { horizontal: 3, vertical: 0 },
             markers: { width: 8, height: 8, radius: 2 },
             formatter: (label, opts) => {
               const val = opts.w.globals.series[opts.seriesIndex]
@@ -579,7 +615,7 @@ export default {
           plotOptions: {
             pie: {
               donut: {
-                size: '62%',
+                size: '66%',
                 labels: {
                   show: true,
                   value: {
@@ -610,12 +646,12 @@ export default {
     // histograma horizontal compacto (ranking)
     hbarOptions (categories, color, { tooltipExtra } = {}) {
       return {
-        chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', animations: { speed: 300 } },
+        chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', animations: { speed: 300 }, ...this.apexLocale },
         colors: [color],
         plotOptions: {
           bar: {
             horizontal: true,
-            barHeight: '70%',
+            barHeight: '78%',
             borderRadius: 3,
             borderRadiusApplication: 'end',
             dataLabels: { position: 'top' }
@@ -631,7 +667,7 @@ export default {
           borderColor: '#EEEEEE',
           strokeDashArray: 4,
           yaxis: { lines: { show: false } },
-          padding: { left: 0, right: 30, top: -14, bottom: -6 }
+          padding: { left: 0, right: 30, top: -18, bottom: -10 }
         },
         xaxis: {
           categories,
@@ -729,17 +765,17 @@ export default {
   color: #757575;
 }
 .kpi-value {
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.25;
   font-weight: 700;
 }
 
 /* Tarjetas */
 .card-head {
-  padding: 6px 8px 0;
+  padding: 4px 6px 0;
 }
 .card-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #424242;
 }
@@ -747,7 +783,7 @@ export default {
   color: #9e9e9e;
   font-size: 12px;
   text-align: center;
-  padding: 24px 8px;
+  padding: 16px 8px;
 }
 
 .tabla-prod {
@@ -756,8 +792,8 @@ export default {
 }
 .tabla-prod th,
 .tabla-prod td {
-  font-size: 12px;
-  padding: 2px 6px;
-  height: 24px;
+  font-size: 11px;
+  padding: 1px 5px;
+  height: 20px;
 }
 </style>

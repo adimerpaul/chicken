@@ -237,6 +237,9 @@
               <div class="text-caption">
                 QR: <b>{{ ingresoQr }}</b> Bs
               </div>
+              <div class="text-caption" v-if="ingresoTarjetaNum > 0">
+                Tarjeta: <b>{{ money(ingresoTarjetaNum) }}</b> Bs
+              </div>
             </q-card-section>
           </q-card>
         </div>
@@ -283,6 +286,15 @@
               <q-chip dense :color="typeColor(props.row.type)" text-color="white">
                 {{ props.row.type }}
               </q-chip>
+            </q-td>
+          </template>
+
+          <template #body-cell-pago="props">
+            <q-td :props="props">
+              {{ props.row.pago }}
+              <div v-if="props.row.pago === 'MIXTO'" class="text-caption text-grey-7" style="line-height: 1.1">
+                {{ detalleMixto(props.row) }}
+              </div>
             </q-td>
           </template>
 
@@ -373,7 +385,9 @@
           <div class="row q-col-gutter-sm q-mb-sm">
             <div class="col-6"><b>Cliente:</b> {{ current?.name }}</div>
             <div class="col-3"><b>Mesa:</b> {{ current?.mesa }}</div>
-            <div class="col-3"><b>Pago:</b> {{ current?.pago }}</div>
+            <div class="col-3"><b>Pago:</b> {{ current?.pago }}
+              <span v-if="current?.pago === 'MIXTO'" class="text-caption text-grey-7">({{ detalleMixto(current) }})</span>
+            </div>
             <div class="col-6"><b>Tipo:</b> {{ current?.type }}</div>
             <div class="col-6"><b>Estado:</b> {{ current?.status }}</div>
             <div class="col-12" v-if="current?.comment">
@@ -450,6 +464,21 @@
                 label="Pago"
               />
             </div>
+
+            <template v-if="editVenta.pago === 'MIXTO'">
+              <div class="col-4">
+                <q-input v-model.number="editVenta.monto_efectivo" type="number" step="0.01" min="0" dense outlined label="Efectivo"/>
+              </div>
+              <div class="col-4">
+                <q-input v-model.number="editVenta.monto_qr" type="number" step="0.01" min="0" dense outlined label="QR"/>
+              </div>
+              <div class="col-4">
+                <q-input v-model.number="editVenta.monto_tarjeta" type="number" step="0.01" min="0" dense outlined label="Tarjeta"/>
+              </div>
+              <div class="col-12 text-caption text-bold" :class="Math.abs(sumaEditMixto - Number(editVenta.total || 0)) < 0.01 ? 'text-positive' : 'text-negative'">
+                Suma: {{ money(sumaEditMixto) }} / Total: {{ money(editVenta.total) }} Bs
+              </div>
+            </template>
 
             <div class="col-12">
               <q-input
@@ -798,6 +827,10 @@ export default {
         name: '',
         mesa: 'MESA',
         pago: 'EFECTIVO',
+        total: 0,
+        monto_efectivo: 0,
+        monto_qr: 0,
+        monto_tarjeta: 0,
         llamada: null,
         comment: ''
       },
@@ -855,6 +888,7 @@ export default {
         { label: 'EFECTIVO', value: 'EFECTIVO' },
         { label: 'QR', value: 'QR' },
         { label: 'TARJETA', value: 'TARJETA' },
+        { label: 'MIXTO', value: 'MIXTO' },
         { label: 'ONLINE', value: 'ONLINE' }
       ],
 
@@ -915,31 +949,19 @@ export default {
       })
       return this.money(sum)
     },
+    // por montos: el pago MIXTO suma su parte a efectivo, QR y tarjeta
     ingresoEfectivo () {
-      let sum = 0
-      this.rows.forEach(item => {
-        if (
-          item.type === 'INGRESO' &&
-          item.status === 'ACTIVO' &&
-          item.pago === 'EFECTIVO'
-        ) {
-          sum += Number(item.total || 0)
-        }
-      })
-      return this.money(sum)
+      return this.money(this.sumaMonto('monto_efectivo'))
     },
     ingresoQr () {
-      let sum = 0
-      this.rows.forEach(item => {
-        if (
-          item.type === 'INGRESO' &&
-          item.status === 'ACTIVO' &&
-          item.pago === 'QR'
-        ) {
-          sum += Number(item.total || 0)
-        }
-      })
-      return this.money(sum)
+      return this.money(this.sumaMonto('monto_qr'))
+    },
+    ingresoTarjetaNum () {
+      return this.sumaMonto('monto_tarjeta')
+    },
+    sumaEditMixto () {
+      const e = this.editVenta
+      return Number(e.monto_efectivo || 0) + Number(e.monto_qr || 0) + Number(e.monto_tarjeta || 0)
     },
     countIngreso () {
       let count = 0
@@ -1256,6 +1278,17 @@ export default {
       })
     },
 
+    sumaMonto (campo) {
+      return (this.rows || []).reduce((a, item) =>
+        item.type === 'INGRESO' && item.status === 'ACTIVO' ? a + Number(item[campo] || 0) : a, 0)
+    },
+    detalleMixto (row) {
+      return [['Ef', row.monto_efectivo], ['QR', row.monto_qr], ['Tj', row.monto_tarjeta]]
+        .filter(([, v]) => Number(v) > 0)
+        .map(([k, v]) => `${k} ${this.money(v)}`)
+        .join(' · ')
+    },
+
     openEditVenta (row) {
       this.editVenta = {
         id: row.id,
@@ -1264,6 +1297,10 @@ export default {
         name: row.name || '',
         mesa: row.mesa || 'MESA',
         pago: row.pago || 'EFECTIVO',
+        total: Number(row.total || 0),
+        monto_efectivo: Number(row.monto_efectivo || 0),
+        monto_qr: Number(row.monto_qr || 0),
+        monto_tarjeta: Number(row.monto_tarjeta || 0),
         llamada: row.llamada ?? null,
         comment: row.comment || ''
       }
@@ -1279,6 +1316,11 @@ export default {
           name: this.editVenta.name || null,
           mesa: this.editVenta.mesa || null,
           pago: this.editVenta.pago || null,
+          ...(this.editVenta.pago === 'MIXTO' ? {
+            monto_efectivo: Number(this.editVenta.monto_efectivo || 0),
+            monto_qr: Number(this.editVenta.monto_qr || 0),
+            monto_tarjeta: Number(this.editVenta.monto_tarjeta || 0)
+          } : {}),
           llamada: this.editVenta.llamada === '' ? null : this.editVenta.llamada,
           comment: this.editVenta.comment || null
         })

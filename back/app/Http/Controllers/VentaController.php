@@ -8,6 +8,7 @@ use App\Models\VentaDetalle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 
 class VentaController extends Controller
@@ -222,6 +223,9 @@ class VentaController extends Controller
             'llamada'=> ['nullable','integer','min:0'],
             'comment'=> ['nullable','string'],
             'products'   => ['nullable','array'],
+            'monto_efectivo' => ['nullable','numeric','min:0'],
+            'monto_qr'       => ['nullable','numeric','min:0'],
+            'monto_tarjeta'  => ['nullable','numeric','min:0'],
         ]);
 
         return DB::transaction(function () use ($data, $request) {
@@ -266,6 +270,8 @@ class VentaController extends Controller
                 $total = $request->get('total', 0);
             }
 
+            $montos = $this->montosMixto($data['pago'] ?? 'EFECTIVO', $data, (float) $total);
+
             $venta = Venta::create([
                 'date'   => $date,
                 'time'   => $time,
@@ -280,6 +286,7 @@ class VentaController extends Controller
                 'llamada'=> $data['llamada'] ?? null,
                 'comment'=> $data['comment'] ?? null,
                 'numero' => $numero,
+                ...$montos,
             ]);
 
             $detalles = [];
@@ -318,6 +325,26 @@ class VentaController extends Controller
         });
     }
 
+    // En pago MIXTO los montos deben cubrir exactamente el total;
+    // en los demás tipos el modelo los calcula solo.
+    private function montosMixto(string $pago, array $data, float $total): array
+    {
+        if ($pago !== 'MIXTO') return [];
+
+        $montos = [
+            'monto_efectivo' => round((float) ($data['monto_efectivo'] ?? 0), 2),
+            'monto_qr'       => round((float) ($data['monto_qr'] ?? 0), 2),
+            'monto_tarjeta'  => round((float) ($data['monto_tarjeta'] ?? 0), 2),
+        ];
+        $suma = array_sum($montos);
+        if (abs($suma - $total) > 0.009) {
+            throw ValidationException::withMessages([
+                'pago' => 'En pago mixto la suma de montos ('.number_format($suma, 2).') debe ser igual al total ('.number_format($total, 2).')',
+            ]);
+        }
+        return $montos;
+    }
+
     // GET /sales/{venta}
     public function show(Venta $sale)
     {
@@ -340,6 +367,9 @@ class VentaController extends Controller
             'pago'    => ['sometimes', 'nullable', 'string', 'max:40'],
             'llamada' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'comment' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'monto_efectivo' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'monto_qr'       => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'monto_tarjeta'  => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ]);
 
         $allowed = ['type', 'status', 'name', 'mesa', 'pago', 'llamada', 'comment'];
@@ -348,6 +378,13 @@ class VentaController extends Controller
             if ($request->exists($field)) {
                 $payload[$field] = $data[$field] ?? null;
             }
+        }
+
+        $pago = $payload['pago'] ?? $sale->pago;
+        if ($pago === 'MIXTO') {
+            // si no se mandan montos se validan los que ya tiene la venta
+            $montos = array_merge($sale->only(['monto_efectivo', 'monto_qr', 'monto_tarjeta']), $data);
+            $payload = array_merge($payload, $this->montosMixto($pago, $montos, (float) $sale->total));
         }
 
         if (!empty($payload)) {

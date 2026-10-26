@@ -171,22 +171,29 @@ class ReporteController extends Controller
         $ticket_prom = $ventasCt ? round($ingresos / $ventasCt, 2) : 0;
 
         // Pagos (incluye QR)
-        $pagos = $applyIngresosConDetalle(clone $base)
-            ->select(
-                'v.pago',
-                DB::raw('COUNT(*) as items'),
-                DB::raw('SUM(v.total) as total')
-            )
-            ->groupBy('v.pago')
-            ->get();
+        // por montos: una venta MIXTO suma a efectivo, QR y tarjeta según lo cobrado
+        $p = $applyIngresosConDetalle(clone $base)
+            ->selectRaw("
+                SUM(v.monto_efectivo) as efectivo,
+                SUM(CASE WHEN v.monto_efectivo > 0 THEN 1 ELSE 0 END) as efectivo_items,
+                SUM(v.monto_qr) as qr,
+                SUM(CASE WHEN v.monto_qr > 0 THEN 1 ELSE 0 END) as qr_items,
+                SUM(v.monto_tarjeta) as tarjeta,
+                SUM(CASE WHEN v.monto_tarjeta > 0 THEN 1 ELSE 0 END) as tarjeta_items,
+                SUM(CASE WHEN v.pago = 'ONLINE' THEN v.total ELSE 0 END) as online,
+                SUM(CASE WHEN v.pago = 'ONLINE' THEN 1 ELSE 0 END) as online_items
+            ")
+            ->first();
 
-        $qr_total = $applyIngresosConDetalle(clone $base)
-            ->where('v.pago', 'QR')
-            ->sum('v.total');
+        $pagos = collect([
+            ['pago' => 'EFECTIVO', 'items' => (int) $p->efectivo_items, 'total' => (float) $p->efectivo],
+            ['pago' => 'QR',       'items' => (int) $p->qr_items,       'total' => (float) $p->qr],
+            ['pago' => 'TARJETA',  'items' => (int) $p->tarjeta_items,  'total' => (float) $p->tarjeta],
+            ['pago' => 'ONLINE',   'items' => (int) $p->online_items,   'total' => (float) $p->online],
+        ])->filter(fn ($r) => $r['total'] > 0)->values();
 
-        $qr_items = $applyIngresosConDetalle(clone $base)
-            ->where('v.pago', 'QR')
-            ->count();
+        $qr_total = (float) $p->qr;
+        $qr_items = (int) $p->qr_items;
 
         // Mesas
         $mesas = (clone $base)

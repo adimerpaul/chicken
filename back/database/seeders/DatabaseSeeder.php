@@ -36,11 +36,16 @@ class DatabaseSeeder extends Seeder
             'Ventas',
             'Compras',
             'Reportes',
+            'Despachos',
+            'Despachos admin',
         ];
         foreach ($permisos as $permiso) {
             Permission::firstOrCreate(['name' => $permiso]);
         }
         $userAdmin->givePermissionTo(Permission::all());
+
+        // --- Productos de despacho (nota del proveedor de pollo)
+        $this->call(DespachoProductoSeeder::class);
 
         // --- Insumos del texto (menú)
         // Notas de unidad sugerida:

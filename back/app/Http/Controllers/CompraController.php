@@ -33,7 +33,8 @@ class CompraController extends Controller
         // {
         //   "fecha":"2025-11-10",
         //   "proveedor":"Fulano",
-        //   "pago":"EFECTIVO", // EFECTIVO | QR
+        //   "pago":"EFECTIVO", // EFECTIVO | QR | MIXTO
+        //   "monto_efectivo":50, "monto_qr":20, // solo en MIXTO
         //   "nota":"opc",
         //   "detalles":[
         //     {"insumo_id":1,"cantidad":5,"costo":12.5},
@@ -43,9 +44,27 @@ class CompraController extends Controller
 
         return DB::transaction(function () use ($request) {
             $pago = strtoupper((string) $request->input('pago', 'EFECTIVO'));
-            if (!in_array($pago, ['EFECTIVO', 'QR'], true)) {
+            if (!in_array($pago, ['EFECTIVO', 'QR', 'MIXTO'], true)) {
                 return response()->json(['message' => 'Método de pago inválido'], 422);
             }
+
+            // en MIXTO el efectivo + QR debe cubrir exactamente el total de la compra
+            $montoEf = $montoQr = 0;
+            if ($pago === 'MIXTO') {
+                $totalCompra = 0;
+                foreach ((array) $request->input('detalles', []) as $d) {
+                    $totalCompra += (float) ($d['cantidad'] ?? 0) * (float) ($d['costo'] ?? 0);
+                }
+                $montoEf = round(max(0, (float) $request->input('monto_efectivo', 0)), 2);
+                $montoQr = round(max(0, (float) $request->input('monto_qr', 0)), 2);
+                if (abs(($montoEf + $montoQr) - $totalCompra) > 0.009) {
+                    return response()->json([
+                        'message' => 'En pago mixto la suma de efectivo y QR ('.number_format($montoEf + $montoQr, 2).') debe ser igual al total ('.number_format($totalCompra, 2).')'
+                    ], 422);
+                }
+            }
+            // efectivo que falta asignar a los gastos de cada insumo
+            $efPendiente = $montoEf;
 
             $compra = Compra::create([
                 'fecha'     => $request->input('fecha', now()->toDateString()),
@@ -53,6 +72,8 @@ class CompraController extends Controller
                 'proveedor' => $request->input('proveedor'),
                 'nota'      => $request->input('nota'),
                 'pago'      => $pago,
+                'monto_efectivo' => $montoEf,
+                'monto_qr'       => $montoQr,
                 'total'     => 0, // se calcula abajo
                 'estado'    => 'ACTIVO',
             ]);
@@ -79,6 +100,22 @@ class CompraController extends Controller
                 $insumo->costo = $costo;
                 $insumo->save();
 
+                // MIXTO: el efectivo se asigna a los insumos en orden y el resto va a QR
+                $pagoGasto = $pago;
+                $montosGasto = [];
+                if ($pago === 'MIXTO') {
+                    $ef = round(min($efPendiente, $subtotal), 2);
+                    $efPendiente = round($efPendiente - $ef, 2);
+                    $qr = round($subtotal - $ef, 2);
+                    if ($qr <= 0) {
+                        $pagoGasto = 'EFECTIVO';
+                    } elseif ($ef <= 0) {
+                        $pagoGasto = 'QR';
+                    } else {
+                        $montosGasto = ['monto_efectivo' => $ef, 'monto_qr' => $qr];
+                    }
+                }
+
                 Venta::create([
                     'date'    => date('Y-m-d'),
                     'time'    => date('H:i:s'),
@@ -90,7 +127,8 @@ class CompraController extends Controller
                     'type'    => 'EGRESO',
                     'status'  => 'ACTIVO',
                     'mesa'    => 'GASTO',
-                    'pago'    => $pago,
+                    'pago'    => $pagoGasto,
+                    ...$montosGasto,
                     'llamada' => null,
                     'comment' => 'COMPRA_ID:'.$compra->id.';INSUMO_ID:'.$insumo->id,
                     'numero'  => 0,

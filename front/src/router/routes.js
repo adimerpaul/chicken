@@ -45,6 +45,11 @@ const routes = [
         component: () => import('pages/ventas/VentasLista.vue'),
         meta: { requiresAuth: true }
       },
+      {
+        path: '/ventas/inventario-caja',
+        component: () => import('pages/ventas/InventarioCaja.vue'),
+        meta: { requiresAuth: true }
+      },
       // reportes
       {
         path: '/reportes',
@@ -81,6 +86,16 @@ const routes = [
       {
         path: '/ventas-resumen',
         component: () => import('pages/reportes/VentasResumen.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: '/despachos',
+        component: () => import('pages/despachos/Despachos.vue'),
+        meta: { requiresAuth: true }
+      },
+      {
+        path: '/despachos/productos',
+        component: () => import('pages/despachos/DespachoProductos.vue'),
         meta: { requiresAuth: true }
       },
       {

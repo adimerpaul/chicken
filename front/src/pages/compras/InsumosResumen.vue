@@ -236,8 +236,23 @@
                 outlined
                 emit-value
                 map-options
+                @update:model-value="onPago"
               />
             </div>
+            <!-- pago mixto: parte en efectivo y parte en QR -->
+            <template v-if="compra.pago === 'MIXTO'">
+              <div class="col-6">
+                <q-input v-model.number="compra.monto_efectivo" type="number" step="0.01" min="0" dense outlined label="Efectivo (Bs)"
+                         @update:model-value="compra.monto_qr = resto(compra.monto_efectivo)"/>
+              </div>
+              <div class="col-6">
+                <q-input v-model.number="compra.monto_qr" type="number" step="0.01" min="0" dense outlined label="QR (Bs)"
+                         @update:model-value="compra.monto_efectivo = resto(compra.monto_qr)"/>
+              </div>
+              <div class="col-12 text-caption text-bold" :class="mixtoCuadra ? 'text-positive' : 'text-negative'">
+                Suma: {{ money(sumaMixto) }} / Total: {{ money(total) }} Bs
+              </div>
+            </template>
             <div class="col-12">
               <q-input v-model="compra.nota" label="Nota" type="textarea" autogrow dense outlined/>
             </div>
@@ -300,9 +315,10 @@ export default {
       payDlg: false,
       pagoOptions: [
         { label: 'Efectivo', value: 'EFECTIVO' },
-        { label: 'QR', value: 'QR' }
+        { label: 'QR', value: 'QR' },
+        { label: 'Mixto (Efectivo + QR)', value: 'MIXTO' }
       ],
-      compra: { fecha: today, proveedor: '', nota: '', pago: 'EFECTIVO' },
+      compra: { fecha: today, proveedor: '', nota: '', pago: 'EFECTIVO', monto_efectivo: 0, monto_qr: 0 },
       proveedorDlg: false,
       proveedorNombre: '',
     }
@@ -329,6 +345,12 @@ export default {
           String(i.unidad || '').toLowerCase().includes(q) ||
           String(i.descripcion || '').toLowerCase().includes(q)
       })
+    },
+    sumaMixto () {
+      return Number(this.compra.monto_efectivo || 0) + Number(this.compra.monto_qr || 0)
+    },
+    mixtoCuadra () {
+      return Math.abs(this.sumaMixto - this.total) < 0.01
     },
     total () {
       return this.carrito.reduce((a, it) => {
@@ -461,6 +483,17 @@ export default {
       this.carrito = []
     },
 
+    // lo que falta del total después del monto indicado
+    resto (monto) {
+      return Math.max(0, Math.round((this.total - Number(monto || 0)) * 100) / 100)
+    },
+    onPago (p) {
+      if (p === 'MIXTO') {
+        this.compra.monto_efectivo = Math.round(this.total * 100) / 100
+        this.compra.monto_qr = 0
+      }
+    },
+
     openPayDialog () {
       if (!this.carrito.length) {
         if (this.$alert && this.$alert.error) this.$alert.error('Carrito vacío')
@@ -470,12 +503,21 @@ export default {
     },
 
     async savePurchase () {
+      const esMixto = this.compra.pago === 'MIXTO'
+      if (esMixto && !this.mixtoCuadra) {
+        if (this.$alert && this.$alert.error) this.$alert.error(`La suma de efectivo y QR (${this.money(this.sumaMixto)}) debe ser igual al total (${this.money(this.total)})`)
+        return
+      }
       // arma payload para /compras
       const payload = {
         fecha: this.compra.fecha,
         proveedor: this.compra.proveedor || null,
         nota: this.compra.nota || null,
         pago: this.compra.pago || 'EFECTIVO',
+        ...(esMixto ? {
+          monto_efectivo: Number(this.compra.monto_efectivo || 0),
+          monto_qr: Number(this.compra.monto_qr || 0)
+        } : {}),
         detalles: this.carrito.map(it => ({
           insumo_id: it.id,
           cantidad: Number(it.cantidad || 0),
@@ -493,6 +535,8 @@ export default {
         this.compra.proveedor = ''
         this.compra.nota = ''
         this.compra.pago = 'EFECTIVO'
+        this.compra.monto_efectivo = 0
+        this.compra.monto_qr = 0
         // refrescar stocks si quieres
         this.insumosGet()
       } catch (e) {

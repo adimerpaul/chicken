@@ -220,12 +220,74 @@ export class Imprimir {
     if (!el) {
       el = document.createElement('div')
       el.id = 'myelement'
-      el.style.position = 'fixed'
-      el.style.left = '-10000px'
-      el.style.top = '-10000px'
+      // oculto con la clase de Quasar: Printd clona el elemento al iframe y ahí la clase
+      // no existe, así que se imprime. Con estilos en línea (fuera de pantalla) saldría en blanco.
+      el.className = 'hidden'
       document.body.appendChild(el)
     }
     return el
+  }
+
+  // Tabla de refrescos: inicial + aumentos - vendido = queda (solo filas con movimiento)
+  static _inventarioBloque (inv) {
+    const rows = (inv?.items || []).filter(r => r.inicial || r.aumento || r.vendido)
+    if (!rows.length) return ''
+
+    const n = v => Number(v || 0).toLocaleString('es-BO', { maximumFractionDigits: 2 })
+    const td = 'border:1px solid #000;padding:1px 2px;text-align:center;'
+    const filas = rows.map(r => `
+      <tr>
+        <td style="${td}text-align:left;">${String(r.name || '').toUpperCase()}</td>
+        <td style="${td}">${n(r.inicial)}</td>
+        <td style="${td}">${n(r.aumento)}</td>
+        <td style="${td}">${n(r.vendido)}</td>
+        <td style="${td}font-weight:bold;">${n(r.queda)}</td>
+      </tr>`).join('')
+
+    return `
+      <div style="border-top:1px dashed #000;margin:6px 0;"></div>
+      <div style="text-align:center;font-weight:bold;font-size:12px;">INVENTARIO REFRESCOS</div>
+      <table style="width:100%;border-collapse:collapse;margin-top:3px;font-size:10px;">
+        <tr>
+          <th style="${td}">PRODUCTO</th>
+          <th style="${td}">INI</th>
+          <th style="${td}">+</th>
+          <th style="${td}">VEND</th>
+          <th style="${td}">QUEDA</th>
+        </tr>
+        ${filas}
+      </table>
+      <div style="margin-top:3px;font-size:9px;text-align:center;">Queda = inicial + aumentos - vendido</div>
+    `
+  }
+
+  static inventarioCaja (inv, userName = '') {
+    if (!inv) return
+    const logo = `${window.location.origin}/chicken-logo.png`
+    const ahora = new Date().toLocaleString('es-BO')
+
+    const html = `
+      <style>
+        *{ box-sizing:border-box; margin:0; padding:0; }
+        body{ font-family: Arial, sans-serif; font-size:11px; }
+        .ticket{ width:7.2cm; padding:4px 6px; }
+        .center{ text-align:center; }
+        .logo img{ max-width:80px; display:block; margin:0 auto 3px auto; }
+        .firma{ margin-top:28px; border-top:1px solid #000; text-align:center; font-size:10px; padding-top:2px; }
+      </style>
+      <div class="ticket">
+        <div class="logo"><img src="${logo}" alt="logo"></div>
+        <div class="center" style="font-size:14px;font-weight:bold;">INVENTARIO DE CAJA</div>
+        <div class="center" style="font-size:10px;">Fecha: ${inv.date || ''}</div>
+        <div class="center" style="font-size:10px;">Vendedor: ${userName}</div>
+        ${Imprimir._inventarioBloque(inv) || '<div class="center" style="margin-top:6px;">Sin inventario registrado</div>'}
+        <div class="firma">Firma vendedor</div>
+        <div class="center" style="font-size:9px;margin-top:4px;">Impreso: ${ahora}</div>
+      </div>
+    `
+    const area = Imprimir._getArea()
+    area.innerHTML = html
+    new Printd().print(area)
   }
 
   static cierreCaja (cierre) {
@@ -687,6 +749,8 @@ export class Imprimir {
 
       <div class="dash"></div>
       <div class="note">Diferencia = contado - sistema</div>
+
+      ${Imprimir._inventarioBloque(cierre.inventario)}
     </div>
   `
 

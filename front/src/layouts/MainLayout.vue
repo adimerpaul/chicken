@@ -260,7 +260,9 @@ function toggleLeftDrawer () {
 }
 
 function canPermission (permission) {
-  return store.permissions.includes(permission)
+  // acepta un permiso o una lista (basta con tener uno)
+  const perms = Array.isArray(permission) ? permission : [permission]
+  return perms.some(p => store.permissions.includes(p))
 }
 
 // ---------- Definición del menú ----------
@@ -276,6 +278,7 @@ const menu = [
     items: [
       { label: 'Nueva venta', icon: 'point_of_sale', to: '/ventas', perm: 'Ventas' },
       { label: 'Ventas', icon: 'receipt_long', to: '/ventas/lista', perm: 'Ventas' },
+      { label: 'Inventario de caja', icon: 'local_drink', to: '/ventas/inventario-caja', perm: 'Ventas' },
       {
         label: 'Compras',
         icon: 'shopping_cart',
@@ -284,7 +287,8 @@ const menu = [
           { label: 'Compras de insumos', icon: 'add_shopping_cart', to: '/compras/insumos' },
           { label: 'Gestión de compras', icon: 'inventory', to: '/compras' }
         ]
-      }
+      },
+      { label: 'Despachos de pollo', icon: 'local_shipping', to: '/despachos', perm: ['Despachos', 'Despachos admin'] }
     ]
   },
   {
@@ -293,7 +297,8 @@ const menu = [
       { label: 'Productos', icon: 'shopping_bag', to: '/productos', perm: 'Productos' },
       { label: 'Insumos', icon: 'inventory_2', to: '/insumos', perm: 'Insumos' },
       { label: 'Control de consumo', icon: 'fact_check', to: '/insumos/control-consumo', perm: 'Insumos' },
-      { label: 'Control consumo (tabla)', icon: 'table_view', to: '/insumos/control-consumo-tabla', perm: 'Insumos' }
+      { label: 'Control consumo (tabla)', icon: 'table_view', to: '/insumos/control-consumo-tabla', perm: 'Insumos' },
+      { label: 'Productos de despacho', icon: 'egg', to: '/despachos/productos', perm: 'Despachos admin' }
     ]
   },
   {
@@ -328,6 +333,7 @@ const titles = {
   '/': ['Inicio', 'Resumen general del sistema'],
   '/ventas': ['Nueva venta', 'Registro de venta en punto de caja'],
   '/ventas/lista': ['Ventas', 'Resumen e historial de ventas'],
+  '/ventas/inventario-caja': ['Inventario de caja', 'Refrescos del vendedor: inicial, aumentos y vendido'],
   '/compras': ['Compras', 'Gestión de compras a proveedores'],
   '/compras/insumos': ['Compras de insumos', 'Detalle de insumos comprados'],
   '/productos': ['Productos', 'Catálogo de productos de venta'],
@@ -338,7 +344,9 @@ const titles = {
   '/reportes-sistema': ['Reportes del sistema', 'Auditoría y actividad'],
   '/ventas-resumen': ['Resumen de ventas', 'Consolidado por periodo'],
   '/reportes/ajuste-caja-garden': ['Ajuste de caja', 'Ingresos y egresos manuales'],
-  '/usuarios': ['Usuarios', 'Cuentas, roles y permisos']
+  '/usuarios': ['Usuarios', 'Cuentas, roles y permisos'],
+  '/despachos': ['Despachos de pollo', 'Recepción y control de peso de las notas de despacho'],
+  '/despachos/productos': ['Productos de despacho', 'Productos que llegan en las notas del proveedor']
 }
 
 const currentTitle = computed(() => titles[route.path]?.[0] ?? 'Chicken’s Garden')

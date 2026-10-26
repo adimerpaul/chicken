@@ -5,6 +5,9 @@ use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\AlmacenInsumoMovimientoController;
 use App\Http\Controllers\CierreCajaController;
 use App\Http\Controllers\CompraController;
+use App\Http\Controllers\DespachoController;
+use App\Http\Controllers\DespachoProductoController;
+use App\Http\Controllers\InventarioCajaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\SaleController;
@@ -114,7 +117,26 @@ Route::middleware('auth:sanctum')->group(callback: function () {
     Route::post('ingresos', [App\Http\Controllers\VentaController::class, 'storeIngreso']);
     Route::get('reportes/ajuste-caja', [CajaAjusteController::class, 'index']);
 
+//    despachos de pollo
+    Route::get('despacho-productos', [DespachoProductoController::class, 'index']);
+    Route::post('despacho-productos', [DespachoProductoController::class, 'store']);
+    Route::put('despacho-productos/{id}', [DespachoProductoController::class, 'update']);
+    Route::delete('despacho-productos/{id}', [DespachoProductoController::class, 'destroy']);
+
+    Route::post('despachos/report', [DespachoController::class, 'report']);
+    Route::post('despachos', [DespachoController::class, 'store']);
+    Route::get('despachos/{id}', [DespachoController::class, 'show']);
+    Route::put('despachos/{id}', [DespachoController::class, 'update']);
+    Route::put('despachos/{id}/completar', [DespachoController::class, 'completar']);
+    Route::put('despachos/{id}/anular', [DespachoController::class, 'anular']);
+
+//    inventario de refrescos por caja (vendedor)
+    Route::get('inventario-caja', [InventarioCajaController::class, 'index']);
+    Route::post('inventario-caja/inicial', [InventarioCajaController::class, 'inicial']);
+    Route::post('inventario-caja/aumento', [InventarioCajaController::class, 'aumento']);
+    Route::delete('inventario-caja/{id}', [InventarioCajaController::class, 'destroy']);
 
 });
 Route::get('reportes/ajuste-caja/excel', [CajaAjusteController::class, 'excel']); // opcional
 Route::get('compras-almacen/{compra}/pdf', [AlmacenCompraController::class, 'pdf']);
+Route::get('despachos/{id}/pdf', [DespachoController::class, 'pdf']);

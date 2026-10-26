@@ -47,6 +47,12 @@
                       <q-icon name="image" size="48px"/>
                     </div>
 
+                    <div v-if="quedan[p.id] !== undefined" class="absolute-top-right q-ma-sm text-white"
+                         :class="quedan[p.id] > 0 ? 'bg-green-8' : 'bg-grey-8'"
+                         style="padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px;">
+                      Quedan {{ quedan[p.id] }}
+                    </div>
+
                     <div class="absolute-bottom-right q-ma-sm bg-red text-white"
                          style="padding:4px 10px;border-radius:999px;font-weight:700;">
                       {{ money(p.price) }} Bs
@@ -162,7 +168,7 @@
               <q-select v-model="client.mesa" label="Mesa" outlined dense :options="['MESA','LLEVAR','DELIVERY','PEDIDO YA']"/>
             </div>
             <div class="col-6 col-md-2">
-              <q-select v-model="client.pago" label="Pago" outlined dense :options="['EFECTIVO','QR','TARJETA']"/>
+              <q-select v-model="client.pago" label="Pago" outlined dense :options="['EFECTIVO','QR','TARJETA','MIXTO']" @update:model-value="onPago"/>
             </div>
 
             <div class="col-6 col-md-2">
@@ -175,6 +181,25 @@
             </div>
             <div class="col-12 col-md-8">
               <q-input v-model="client.comment" label="Comentario" outlined dense />
+            </div>
+          </div>
+
+          <!-- pago mixto: se reparte el total, principalmente efectivo + QR -->
+          <div v-if="client.pago === 'MIXTO'" class="row items-center q-col-gutter-sm q-mt-xs">
+            <div class="col-4 col-md-3">
+              <q-input v-model.number="mixto.efectivo" type="number" step="0.01" min="0" label="Efectivo" outlined dense
+                       @update:model-value="mixto.qr = restoMixto('efectivo')"/>
+            </div>
+            <div class="col-4 col-md-3">
+              <q-input v-model.number="mixto.qr" type="number" step="0.01" min="0" label="QR" outlined dense
+                       @update:model-value="mixto.efectivo = restoMixto('qr')"/>
+            </div>
+            <div class="col-4 col-md-3">
+              <q-input v-model.number="mixto.tarjeta" type="number" step="0.01" min="0" label="Tarjeta" outlined dense
+                       @update:model-value="mixto.qr = restoMixto('efectivo')"/>
+            </div>
+            <div class="col-12 col-md-3 text-subtitle2 text-bold" :class="mixtoCuadra ? 'text-positive' : 'text-negative'">
+              Suma: {{ money(sumaMixto) }} / {{ money(total) }} Bs
             </div>
           </div>
 
@@ -221,16 +246,25 @@ export default {
       search: '',
       categoryId: '',
       cart: [],
+      // inventario de refrescos del vendedor: { producto_id: queda }
+      quedan: {},
 
       // pago
       payDlg: false,
       client: { ci: '', name: 'SN', mesa: 'MESA', pago: 'EFECTIVO', llamada: 0, comment: '' },
       recibido: '',
+      mixto: { efectivo: 0, qr: 0, tarjeta: 0 },
 
       cantidades: Array.from({length: 100}, (_,i)=> i+1),
     }
   },
   computed: {
+    sumaMixto () {
+      return this.toMonto(this.mixto.efectivo) + this.toMonto(this.mixto.qr) + this.toMonto(this.mixto.tarjeta)
+    },
+    mixtoCuadra () {
+      return Math.abs(this.sumaMixto - this.total) < 0.01
+    },
     // Categorías presentes en los productos cargados + metadatos (icono/color) conocidos
     categories () {
       const metas = this.categoriesMeta
@@ -292,6 +326,18 @@ export default {
           this.$q.notify?.({ type:'negative', message:'No se pudieron cargar los productos' })
         })
         .finally(() => { this.loading = false })
+      this.fetchInventario()
+    },
+
+    fetchInventario () {
+      this.$axios.get('inventario-caja')
+        .then(({ data }) => {
+          const quedan = {}
+          // solo se muestra si el vendedor registró su inventario inicial
+          if (data.registrado) data.items.forEach(r => { quedan[r.producto_id] = r.queda })
+          this.quedan = quedan
+        })
+        .catch(() => {})
     },
 
     selectCategory (id) { this.categoryId = id },
@@ -317,6 +363,19 @@ export default {
 
     clearCart () { this.cart = [] },
 
+    toMonto (v) {
+      const n = Number(v)
+      return isFinite(n) && n > 0 ? n : 0
+    },
+    // lo que falta para completar el total, sin contar el campo indicado ni el otro principal
+    restoMixto (campo) {
+      const usado = this.toMonto(this.mixto[campo]) + this.toMonto(this.mixto.tarjeta)
+      return Math.max(0, Math.round((this.total - usado) * 100) / 100)
+    },
+    onPago (p) {
+      if (p === 'MIXTO') this.mixto = { efectivo: 0, qr: Math.round(this.total * 100) / 100, tarjeta: 0 }
+    },
+
     openPayDialog () {
       if (!this.cart.length) {
         this.$q.notify?.({ type:'warning', message:'Carrito vacío' })
@@ -338,6 +397,11 @@ export default {
 
     async submitSale () {
       if (!this.cart.length) { this.$q.notify?.({ type:'negative', message:'Carrito vacío' }); return }
+      const esMixto = this.client.pago === 'MIXTO'
+      if (esMixto && !this.mixtoCuadra) {
+        this.$q.notify?.({ type:'negative', message:`La suma del pago mixto (${this.money(this.sumaMixto)}) debe ser igual al total (${this.money(this.total)})` })
+        return
+      }
       this.loading = true
       try {
         const payload = {
@@ -346,16 +410,23 @@ export default {
           mesa: this.client.mesa,
           llamada: this.client.llamada,
           pago: this.client.pago,
-          comment: this.client.comment || ''
+          comment: this.client.comment || '',
+          ...(esMixto ? {
+            monto_efectivo: this.toMonto(this.mixto.efectivo),
+            monto_qr: this.toMonto(this.mixto.qr),
+            monto_tarjeta: this.toMonto(this.mixto.tarjeta)
+          } : {})
         }
         const { data } = await this.$axios.post('sales', payload)
         this.$q.notify?.({ type:'positive', message:'Venta realizada' })
         // limpia y cierra
         Imprimir.ticket(data)
+        this.fetchInventario()
         this.cart = []
         this.payDlg = false
         this.client = { ci: '', name: 'SN', mesa: 'MESA', pago: 'EFECTIVO', llamada: 0, comment: '' }
         this.recibido = ''
+        this.mixto = { efectivo: 0, qr: 0, tarjeta: 0 }
         // si imprimes recibo:
         // Imprimir.recibo(data)
       } catch (e) {

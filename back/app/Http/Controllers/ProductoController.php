@@ -156,7 +156,7 @@ class ProductoController extends Controller
     {
         $data = $request->validate([
             'name'        => ['sometimes','string','max:255'],
-            'category_id' => ['sometimes','nullable','exists:categories,id'],
+            'categoria'   => ['sometimes','string','max:255'],
             'description' => ['sometimes','nullable','string'],
             'price'       => ['sometimes','numeric','min:0'],
             'unit'        => ['sometimes','string','max:10'],

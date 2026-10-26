@@ -135,6 +135,7 @@
                   <q-chip dense square size="11px" color="blue-grey-1" text-color="dark" class="q-ma-none">
                     {{ c.pago || 'EFECTIVO' }}
                   </q-chip>
+                  <span v-if="c.pago === 'MIXTO'" class="text-caption text-grey-7">{{ detalleMixto(c) }}</span>
                   <q-chip dense square size="11px" color="grey-3" text-color="dark" class="q-ma-none">
                     {{ c.detalles_count }} ítems
                   </q-chip>
@@ -221,6 +222,7 @@
                   <q-chip dense color="blue-grey-1" text-color="dark">
                     {{ c.pago || 'EFECTIVO' }}
                   </q-chip>
+                  <div v-if="c.pago === 'MIXTO'" class="text-caption text-grey-7">{{ detalleMixto(c) }}</div>
                 </td>
                 <td class="text-right">
                   <q-chip dense color="grey-3" text-color="dark">
@@ -276,6 +278,7 @@
             <div class="col-6 col-sm-3">
               <div class="text-caption text-grey-7">Pago</div>
               <div class="text-body2 text-weight-medium">{{ (compra && compra.pago) ? compra.pago : 'EFECTIVO' }}</div>
+              <div v-if="compra && compra.pago === 'MIXTO'" class="text-caption text-grey-7">{{ detalleMixto(compra) }}</div>
             </div>
             <div class="col-6 col-sm-3">
               <div class="text-caption text-grey-7">Estado</div>
@@ -408,6 +411,9 @@ export default {
     this.fetch()
   },
   methods: {
+    detalleMixto (c) {
+      return `Ef ${this.money(c.monto_efectivo)} · QR ${this.money(c.monto_qr)}`
+    },
     money (v) {
       return Number(v || 0).toLocaleString('es-BO', {
         minimumFractionDigits: 2,
